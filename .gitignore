@@ -53,6 +53,7 @@ models/*.pth
 data/raw/*
 !data/raw/.gitkeep
 !data/raw/README.md
+!data/raw/train_*.jsonl
 data/processed/*
 !data/processed/.gitkeep
 

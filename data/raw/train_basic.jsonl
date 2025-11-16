@@ -1,0 +1,15 @@
+{"instruction": "Show me all failed SSH login attempts in the last 24 hours", "input": "", "output": "index=linux sourcetype=linux_secure \"Failed password\" earliest=-24h"}
+{"instruction": "Find all events from the firewall index with action=blocked", "input": "", "output": "index=firewall action=blocked"}
+{"instruction": "Search for error messages in web application logs", "input": "", "output": "index=web sourcetype=access_combined status>=400"}
+{"instruction": "Get all Windows Security events with Event ID 4624", "input": "", "output": "index=windows EventCode=4624 sourcetype=WinEventLog:Security"}
+{"instruction": "Show me events from the network index where source IP is 192.168.1.100", "input": "", "output": "index=network src_ip=\"192.168.1.100\""}
+{"instruction": "Find all events containing the word 'malware' in the last hour", "input": "", "output": "index=* \"malware\" earliest=-1h"}
+{"instruction": "List all HTTP POST requests to the API endpoint", "input": "", "output": "index=web http_method=POST uri=\"*/api/*\""}
+{"instruction": "Show DNS queries for suspicious domains", "input": "Suspicious domain: malicious.example.com", "output": "index=dns query=\"*.malicious.example.com\""}
+{"instruction": "Get all authentication events for user john.doe", "input": "", "output": "index=* user=\"john.doe\" (action=login OR action=authentication OR EventCode=4624 OR EventCode=4625)"}
+{"instruction": "Find all outbound connections on port 443", "input": "", "output": "index=network dest_port=443 direction=outbound"}
+{"instruction": "Show me VPN connection logs", "input": "", "output": "index=network sourcetype=vpn (action=connect OR action=connected OR event=vpn_connect)"}
+{"instruction": "Search for PowerShell execution events", "input": "", "output": "index=windows (EventCode=4103 OR EventCode=4104) sourcetype=WinEventLog:*PowerShell*"}
+{"instruction": "Get all email logs from the last 6 hours", "input": "", "output": "index=email earliest=-6h"}
+{"instruction": "Find file creation events on critical servers", "input": "Servers: srv-prod-01, srv-prod-02", "output": "index=windows EventCode=4663 (host=srv-prod-01 OR host=srv-prod-02) Object_Name=\"*\" Access_Mask=\"*WRITE*\""}
+{"instruction": "Show all proxy logs with blocked category", "input": "", "output": "index=proxy action=blocked"}

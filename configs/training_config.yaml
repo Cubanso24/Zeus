@@ -1,0 +1,95 @@
+# Training configuration for Splunk Query LLM
+
+# Model configuration
+model:
+  base_model: "mistralai/Mistral-7B-Instruct-v0.2"  # Base model to fine-tune
+  # Alternative models:
+  # - "meta-llama/Llama-2-7b-chat-hf"
+  # - "codellama/CodeLlama-7b-Instruct-hf"
+  # - "google/gemma-7b-it"
+  model_max_length: 2048
+  torch_dtype: "bfloat16"  # or "float16"
+  load_in_4bit: false  # Use 4-bit quantization
+  load_in_8bit: false  # Use 8-bit quantization
+
+# LoRA (Low-Rank Adaptation) configuration
+lora:
+  enabled: true
+  r: 16  # LoRA rank
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# Training hyperparameters
+training:
+  output_dir: "models/splunk-query-llm"
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 4
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.03
+  max_grad_norm: 1.0
+  lr_scheduler_type: "cosine"
+  optim: "paged_adamw_32bit"
+
+  # Evaluation
+  evaluation_strategy: "steps"
+  eval_steps: 50
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+
+  # Logging
+  logging_dir: "logs"
+  logging_strategy: "steps"
+  logging_steps: 10
+  report_to: ["tensorboard"]  # Can add "wandb" for Weights & Biases
+
+  # Performance
+  fp16: false
+  bf16: true
+  gradient_checkpointing: true
+  group_by_length: true
+  dataloader_num_workers: 4
+
+# Data configuration
+data:
+  train_file: "data/processed/train_alpaca.jsonl"
+  val_file: "data/processed/val_alpaca.jsonl"
+  test_file: "data/processed/test_alpaca.jsonl"
+  format_type: "alpaca"  # alpaca, chat, or completion
+  max_seq_length: 2048
+
+# System prompt for instruction tuning
+system_prompt: |
+  You are a Splunk Query Expert Assistant specialized in generating accurate SPL (Splunk Processing Language) queries for cybersecurity analysts.
+
+  Your responsibilities:
+  1. Generate syntactically correct and efficient Splunk queries based on user requests
+  2. If the request is ambiguous or lacks necessary details, ask clarifying questions instead of making assumptions
+  3. When asking for clarification, prefix your response with "CLARIFICATION:" and ask specific questions about what information you need
+  4. Provide the most accurate query possible with the information given
+  5. Focus on cybersecurity use cases including threat detection, incident investigation, and security monitoring
+
+# Wandb configuration (optional)
+wandb:
+  enabled: false
+  project: "splunk-query-llm"
+  entity: null  # Your wandb username/team
+  name: null  # Run name (auto-generated if null)
+
+# Seed for reproducibility
+seed: 42

@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeus - Splunk Query Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e0e0e0;
+        }
+
+        .main-container {
+            display: flex;
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            gap: 20px;
+        }
+
+        /* History Sidebar */
+        .history-sidebar {
+            width: 280px;
+            background: #1e1e2e;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .history-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .history-item {
+            background: #2a2a3e;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+            border-left: 3px solid #667eea;
+        }
+
+        .history-item:hover {
+            background: #353549;
+        }
+
+        .history-item-time {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .clear-history-btn {
+            margin: 10px;
+            padding: 8px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .clear-history-btn:hover {
+            background: #c82333;
+        }
+
+        /* Statistics Panel */
+        .stats-panel {
+            background: #2a2a3e;
+            margin: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #3a3a4e;
+        }
+
+        .stats-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stats-refresh {
+            font-size: 10px;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .stats-refresh:hover {
+            color: #667eea;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #3a3a4e;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #999;
+        }
+
+        .stat-value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .approval-rate {
+            font-size: 18px;
+            text-align: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .approval-rate.good {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border: 2px solid #28a745;
+        }
+
+        .approval-rate.warning {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border: 2px solid #ffc107;
+        }
+
+        .approval-rate.poor {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border: 2px solid #dc3545;
+        }
+
+        .recent-feedback-list {
+            margin-top: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .recent-item {
+            font-size: 11px;
+            padding: 4px 0;
+            border-bottom: 1px solid #3a3a4e;
+        }
+
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-rating {
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        /* Main Chat Container */
+        .container {
+            flex: 1;
+            background: #1e1e2e;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #16162a;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.assistant .message-content {
+            background: #2a2a3e;
+            color: #e0e0e0;
+            border: 1px solid #3a3a4e;
+        }
+
+        .message.assistant .message-content.clarification {
+            background: #3d3520;
+            border-color: #ffc107;
+        }
+
+        .query-code {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+
+        .clarification-tag {
+            display: inline-block;
+            background: #ffc107;
+            color: #1a1a2e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: #1e1e2e;
+            border-top: 1px solid #3a3a4e;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #3a3a4e;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+            background: #2a2a3e;
+            color: #e0e0e0;
+        }
+
+        #userInput:focus {
+            border-color: #667eea;
+        }
+
+        #sendBtn, #generateAltBtn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #sendBtn:hover, #generateAltBtn:hover {
+            transform: scale(1.05);
+        }
+
+        #sendBtn:disabled, #generateAltBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        #generateAltBtn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-size: 12px;
+            padding: 8px 16px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #3a3a4e;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .examples {
+            padding: 10px 0;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .example-chip {
+            display: inline-block;
+            background: #2a2a3e;
+            color: #e0e0e0;
+            padding: 6px 12px;
+            border-radius: 12px;
+            margin: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid #3a3a4e;
+        }
+
+        .example-chip:hover {
+            background: #353549;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-top: 8px;
+            margin-right: 8px;
+        }
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        /* Feedback buttons */
+        .feedback-container {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .feedback-btn {
+            background: transparent;
+            border: 2px solid #3a3a4e;
+            color: #e0e0e0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feedback-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .feedback-btn.good {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .feedback-btn.good.selected {
+            background: #28a745;
+            color: white;
+        }
+
+        .feedback-btn.bad {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .feedback-btn.bad.selected {
+            background: #dc3545;
+            color: white;
+        }
+
+        .feedback-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .feedback-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .correction-input {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #3a3a4e;
+            border-radius: 6px;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .correction-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-feedback-btn {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .submit-feedback-btn:hover {
+            background: #764ba2;
+        }
+
+        .feedback-status {
+            font-size: 11px;
+            color: #28a745;
+            margin-top: 4px;
+        }
+
+        /* Alternatives Grid */
+        .alternatives-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .alternative-item {
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .alternative-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .alternative-query {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            border: 1px solid #333;
+            margin-bottom: 8px;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        /* Authentication Modal Styles */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-container {
+            background: #1e1e2e;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .auth-title {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .auth-form-group {
+            margin-bottom: 20px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .auth-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .auth-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .auth-switch a {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .user-info-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #2a2a3e;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .admin-badge {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+    </style>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- User Info Header -->
+    <div id="user-info" class="user-info-header" style="display: none;"></div>
+
+    <!-- Main App Container -->
+    <div id="main-app" class="main-container">
+        <!-- History Sidebar -->
+        <div class="history-sidebar">
+            <div class="history-header">
+                📜 Query History
+            </div>
+            <div class="history-list" id="historyList">
+                <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>
+            </div>
+            <button class="clear-history-btn" onclick="clearHistory()">Clear History</button>
+
+            <!-- Statistics Panel -->
+            <div class="stats-panel">
+                <div class="stats-header">
+                    <span>📊 Feedback Stats</span>
+                    <span class="stats-refresh" onclick="loadStats()" title="Refresh stats">🔄</span>
+                </div>
+                <div id="statsContent">
+                    <p style="text-align: center; color: #666; font-size: 11px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="container">
+            <div class="header">
+                <h1>⚡ Zeus - Splunk Query Assistant</h1>
+                <p>Ask me to generate Splunk queries in natural language</p>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p>Hi! I'm Zeus, your Splunk Query Assistant. I can help you generate SPL queries from natural language.</p>
+                        <p style="margin-top: 10px;">Try asking me something like:</p>
+                        <div class="examples">
+                            <span class="example-chip" onclick="setInput('Find failed SSH login attempts in the last 24 hours')">Find failed SSH logins</span>
+                            <span class="example-chip" onclick="setInput('Show me all firewall blocks')">Firewall blocks</span>
+                            <span class="example-chip" onclick="setInput('Get Windows security events with Event ID 4624')">Windows security events</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="userInput"
+                        placeholder="Ask for a Splunk query..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+                <div class="button-row">
+                    <button id="generateAltBtn" onclick="generateAlternatives()">🔄 Generate 3 Alternatives</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let lastUserQuery = '';
+
+        async function loadHistory() {
+            const historyList = document.getElementById('historyList');
+
+            // Check if user is authenticated
+            if (!isAuthenticated()) {
+                historyList.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">Login to view history</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/queries/history?page=1&page_size=50`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch history');
+                }
+
+                const data = await response.json();
+
+                if (data.queries.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>';
+                    return;
+                }
+
+                historyList.innerHTML = data.queries.map((item, index) => {
+                    const date = new Date(item.created_at);
+                    const timeStr = date.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const feedbackBadge = item.has_feedback
+                        ? `<span style="font-size: 10px; color: ${item.feedback_rating === 'good' ? '#28a745' : '#dc3545'};">${item.feedback_rating === 'good' ? '👍' : '👎'}</span>`
+                        : '';
+
+                    // Create unique ID for this history item
+                    const historyId = `history-${item.id}`;
+
+                    return `
+                        <div class="history-item" style="cursor: pointer;" onclick="toggleHistoryQuery('${historyId}')">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 500; margin-bottom: 2px;">
+                                        ${escapeHtml(item.instruction.substring(0, 60))}${item.instruction.length > 60 ? '...' : ''}
+                                    </div>
+                                    <div class="history-item-time">${timeStr} ${feedbackBadge}</div>
+                                </div>
+                                <span style="font-size: 12px; color: #667eea;">▼</span>
+                            </div>
+                            <div id="${historyId}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #3a3a4e;">
+                                <div style="font-size: 11px; color: #999; margin-bottom: 5px;">Generated Query:</div>
+                                <pre style="background: #1a1a2e; padding: 8px; border-radius: 5px; font-size: 11px; overflow-x: auto; margin: 0;">${escapeHtml(item.generated_query)}</pre>
+                                <button onclick="event.stopPropagation(); copyToClipboard('${escapeHtml(item.generated_query).replace(/'/g, "\\'")}', this)" style="margin-top: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Copy Query</button>
+                                <button onclick="event.stopPropagation(); setInput('${escapeHtml(item.instruction).replace(/'/g, "\\'")}'); document.getElementById('${historyId}').style.display = 'none';" style="margin-top: 8px; margin-left: 5px; padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Rerun</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error loading history:', error);
+                historyList.innerHTML = '<p style="text-align: center; color: #dc3545; font-size: 12px; margin-top: 20px;">Error loading history</p>';
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm('Clear all query history? This cannot be undone.')) {
+                return;
+            }
+
+            // Note: We keep queries in the database but could add a delete endpoint
+            // For now, just reload to show the message
+            alert('Note: Query history is stored in the database and cannot be deleted from this interface. Contact an administrator if you need your history removed.');
+        }
+
+        function setInput(text) {
+            document.getElementById('userInput').value = text;
+            document.getElementById('userInput').focus();
+        }
+
+        function toggleHistoryQuery(historyId) {
+            const element = document.getElementById(historyId);
+            if (element.style.display === 'none') {
+                element.style.display = 'block';
+            } else {
+                element.style.display = 'none';
+            }
+        }
+
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btnElement.textContent;
+                btnElement.textContent = '✓ Copied!';
+                btnElement.style.background = '#218838';
+                setTimeout(() => {
+                    btnElement.textContent = originalText;
+                    btnElement.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy query');
+            });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            lastUserQuery = message;
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+
+            // Disable input while processing
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<div class="loading"></div>';
+
+            try {
+                const response = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        instruction: message,
+                        input: '',
+                        temperature: 0.3,
+                        max_new_tokens: 256,
+                        repetition_penalty: 1.2
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Add assistant response
+                addMessage(data.query, 'assistant', data.is_clarification);
+
+                // Reload history to show the new query
+                loadHistory();
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}. Make sure the API server is running on port 8000.`, 'assistant', false, true);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Send';
+            }
+        }
+
+        async function generateAlternatives() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim() || lastUserQuery;
+
+            if (!message) {
+                alert('Please enter a query first, or use your last query');
+                return;
+            }
+
+            // Add user message if new
+            if (input.value.trim()) {
+                lastUserQuery = message;
+                addToHistory(message);
+                addMessage(message, 'user');
+                input.value = '';
+            }
+
+            const altBtn = document.getElementById('generateAltBtn');
+            altBtn.disabled = true;
+            altBtn.innerHTML = '<div class="loading"></div>';
+
+            try {
+                // Generate 3 alternatives with different temperatures
+                const promises = [
+                    fetch(`${API_URL}/generate`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            instruction: message,
+                            input: '',
+                            temperature: 0.2,
+                            max_new_tokens: 256,
+                            repetition_penalty: 1.2
+                        })
+                    }),
+                    fetch(`${API_URL}/generate`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            instruction: message,
+                            input: '',
+                            temperature: 0.5,
+                            max_new_tokens: 256,
+                            repetition_penalty: 1.2
+                        })
+                    }),
+                    fetch(`${API_URL}/generate`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            instruction: message,
+                            input: '',
+                            temperature: 0.8,
+                            max_new_tokens: 256,
+                            repetition_penalty: 1.2
+                        })
+                    })
+                ];
+
+                const responses = await Promise.all(promises);
+                const data = await Promise.all(responses.map(r => r.json()));
+
+                // Add alternatives as a special message
+                addAlternatives(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}. Make sure the API server is running.`, 'assistant', false, true);
+            } finally {
+                altBtn.disabled = false;
+                altBtn.innerHTML = '🔄 Generate 3 Alternatives';
+            }
+        }
+
+        function addAlternatives(dataArray) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.style.maxWidth = '90%';
+
+            contentDiv.innerHTML = `
+                <p><strong>🔄 Generated 3 Alternative Queries:</strong></p>
+                <div class="alternatives-container">
+                    ${dataArray.map((data, i) => `
+                        <div class="alternative-item">
+                            <div class="alternative-header">Option ${i + 1} ${i === 0 ? '(Conservative)' : i === 1 ? '(Balanced)' : '(Creative)'}</div>
+                            <div class="alternative-query" id="alt-query-${i}">${escapeHtml(data.query)}</div>
+                            <button class="copy-btn" onclick="copyQueryOnly('alt-query-${i}', this)">Copy Query</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addMessage(text, sender, isClarification = false, isError = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `message-content ${isClarification ? 'clarification' : ''}`;
+
+            if (sender === 'assistant' && !isError) {
+                if (isClarification) {
+                    contentDiv.innerHTML = `
+                        <span class="clarification-tag">CLARIFICATION REQUEST</span>
+                        <p>${escapeHtml(text)}</p>
+                    `;
+                } else {
+                    const queryId = 'query-' + Date.now();
+                    const feedbackId = 'feedback-' + Date.now();
+                    contentDiv.innerHTML = `
+                        <p><strong>Generated Splunk Query:</strong></p>
+                        <div class="query-code" id="${queryId}">${escapeHtml(text)}</div>
+                        <button class="copy-btn" onclick="copyQueryOnly('${queryId}', this)">Copy Query</button>
+                        <div class="feedback-container" id="${feedbackId}" data-instruction="${escapeHtml(lastUserQuery)}" data-query-id="${queryId}">
+                            <span style="font-size: 12px; color: #888;">Was this helpful?</span>
+                            <button class="feedback-btn good" onclick="handleFeedback('${feedbackId}', 'good', this)" title="Good query">👍</button>
+                            <button class="feedback-btn bad" onclick="handleFeedback('${feedbackId}', 'bad', this)" title="Needs improvement">👎</button>
+                        </div>
+                    `;
+                }
+            } else {
+                contentDiv.textContent = text;
+            }
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyQueryOnly(elementId, btnElement) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btnElement.textContent;
+                btnElement.textContent = '✓ Copied!';
+                btnElement.style.background = '#218838';
+                setTimeout(() => {
+                    btnElement.textContent = originalText;
+                    btnElement.style.background = '#28a745';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy query');
+            });
+        }
+
+        function handleFeedback(feedbackId, rating, btnElement) {
+            console.log('handleFeedback called:', feedbackId, rating);
+            const feedbackContainer = document.getElementById(feedbackId);
+
+            // Get instruction and query from data attributes
+            const instruction = feedbackContainer.getAttribute('data-instruction');
+            const generatedQuery = feedbackContainer.getAttribute('data-query');
+            console.log('Instruction:', instruction, 'Query:', generatedQuery);
+
+            // Check if this is the currently selected rating
+            const currentRating = feedbackContainer.getAttribute('data-current-rating');
+            console.log('Current rating:', currentRating, 'New rating:', rating);
+
+            if (currentRating === rating) {
+                // Already selected this rating, do nothing
+                console.log('Same rating clicked, ignoring');
+                return;
+            }
+
+            // Update the current rating
+            feedbackContainer.setAttribute('data-current-rating', rating);
+            console.log('Updated current rating to:', rating);
+
+            // Mark button as selected and grey out the other button
+            const allButtons = feedbackContainer.querySelectorAll('.feedback-btn');
+            allButtons.forEach(btn => {
+                btn.classList.remove('selected', 'disabled');
+                if (btn !== btnElement) {
+                    btn.classList.add('disabled');
+                }
+            });
+            btnElement.classList.add('selected');
+
+            // Remove any existing correction UI and status messages
+            const existingCorrection = feedbackContainer.querySelector('.correction-ui');
+            if (existingCorrection) {
+                existingCorrection.remove();
+            }
+            const existingStatus = feedbackContainer.querySelectorAll('.feedback-status');
+            existingStatus.forEach(status => status.remove());
+
+            // If rating is bad, show correction input
+            if (rating === 'bad') {
+                const correctionUI = document.createElement('div');
+                correctionUI.className = 'correction-ui';
+                correctionUI.style.width = '100%';
+                correctionUI.style.marginTop = '8px';
+                correctionUI.innerHTML = `
+                    <label style="font-size: 11px; color: #888; display: block; margin-bottom: 4px;">
+                        Provide the correct query (optional):
+                    </label>
+                    <textarea class="correction-input" id="correction-${feedbackId}" rows="3" placeholder="Enter the correct Splunk query..."></textarea>
+                    <button class="submit-feedback-btn" onclick="submitFeedback('${feedbackId}', '${rating}')">
+                        Submit Feedback
+                    </button>
+                    <div id="status-${feedbackId}" class="feedback-status"></div>
+                `;
+                feedbackContainer.appendChild(correctionUI);
+            } else {
+                // For good rating, submit immediately
+                submitFeedback(feedbackId, rating);
+            }
+        }
+
+        async function submitFeedback(feedbackId, rating) {
+            const feedbackContainer = document.getElementById(feedbackId);
+            const instruction = feedbackContainer.getAttribute('data-instruction');
+            const queryId = feedbackContainer.getAttribute('data-query-id');
+            const queryElement = document.getElementById(queryId);
+            const generatedQuery = queryElement ? queryElement.textContent : '';
+
+            const correctionInput = document.getElementById(`correction-${feedbackId}`);
+            const statusDiv = document.getElementById(`status-${feedbackId}`);
+            const correctedQuery = correctionInput ? correctionInput.value.trim() : null;
+
+            try {
+                const response = await fetch(`${API_URL}/feedback`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        instruction: instruction,
+                        generated_query: generatedQuery,
+                        rating: rating,
+                        corrected_query: correctedQuery || null,
+                        comment: null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Show success message
+                if (statusDiv) {
+                    statusDiv.textContent = '✓ ' + data.message;
+                    statusDiv.style.display = 'block';
+                } else {
+                    // For good rating (no status div yet)
+                    const feedbackContainer = document.getElementById(feedbackId);
+                    const status = document.createElement('div');
+                    status.className = 'feedback-status';
+                    status.textContent = '✓ Thank you for your feedback!';
+                    feedbackContainer.appendChild(status);
+                }
+
+                // Refresh stats to show updated feedback counts
+                console.log('Refreshing stats after feedback submission');
+                setTimeout(() => loadStats(), 500); // Small delay to ensure backend has updated
+
+                console.log('Feedback submitted successfully');
+
+            } catch (error) {
+                console.error('Error submitting feedback:', error);
+                const msg = rating === 'good'
+                    ? 'Error submitting feedback. Please try again.'
+                    : 'Error submitting feedback. Please try again.';
+
+                if (statusDiv) {
+                    statusDiv.textContent = '✗ ' + msg;
+                    statusDiv.style.color = '#dc3545';
+                } else {
+                    alert(msg);
+                }
+            }
+        }
+
+        async function loadStats() {
+            const statsContent = document.getElementById('statsContent');
+
+            try {
+                const response = await fetch(`${API_URL}/feedback/stats`, {
+                    headers: getAuthHeaders()
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch stats');
+                }
+
+                const stats = await response.json();
+
+                // Determine approval rate class
+                let rateClass = 'good';
+                if (stats.approval_rate < 50) {
+                    rateClass = 'poor';
+                } else if (stats.approval_rate < 70) {
+                    rateClass = 'warning';
+                }
+
+                // Build HTML
+                let html = '';
+
+                // Approval rate (prominent display)
+                if (stats.total_feedback > 0) {
+                    html += `
+                        <div class="approval-rate ${rateClass}">
+                            ${stats.approval_rate}% Approval
+                        </div>
+                    `;
+
+                    // Show warning if retraining might be needed
+                    if (stats.approval_rate < 70 && stats.total_feedback >= 10) {
+                        html += `
+                            <div style="background: rgba(255, 193, 7, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 11px; color: #ffc107; text-align: center;">
+                                ⚠️ Consider retraining the model
+                            </div>
+                        `;
+                    }
+                }
+
+                // Stats breakdown
+                html += `
+                    <div class="stat-item">
+                        <span class="stat-label">Total Feedback:</span>
+                        <span class="stat-value">${stats.total_feedback}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">👍 Good:</span>
+                        <span class="stat-value" style="color: #28a745;">${stats.good_count}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">👎 Bad:</span>
+                        <span class="stat-value" style="color: #dc3545;">${stats.bad_count}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Corrections:</span>
+                        <span class="stat-value">${stats.corrections_count}</span>
+                    </div>
+                `;
+
+                // Show message if no feedback yet
+                if (stats.total_feedback === 0) {
+                    html = '<p style="text-align: center; color: #666; font-size: 11px;">No feedback yet</p>';
+                }
+
+                statsContent.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                statsContent.innerHTML = '<p style="text-align: center; color: #dc3545; font-size: 11px;">Failed to load stats</p>';
+            }
+        }
+
+        // Auto-refresh stats every 60 seconds
+        let statsInterval;
+        function startStatsRefresh() {
+            loadStats(); // Load immediately
+            statsInterval = setInterval(loadStats, 60000); // Then every 60 seconds
+        }
+
+        function stopStatsRefresh() {
+            if (statsInterval) {
+                clearInterval(statsInterval);
+            }
+        }
+
+        // Check API health on load
+        window.onload = async () => {
+            loadHistory();
+            startStatsRefresh();
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (!response.ok) {
+                    throw new Error('API not responding');
+                }
+                const data = await response.json();
+                if (!data.model_loaded) {
+                    addMessage('Warning: Model is not loaded on the server. Please start the server with the model.', 'assistant', false, true);
+                }
+            } catch (error) {
+                addMessage('Warning: Could not connect to API server. Please start the server first.', 'assistant', false, true);
+            }
+        };
+
+        // Initialize authentication on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+        });
+    </script>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-container">
+            <!-- Login Form -->
+            <div id="login-form-container">
+                <h2 class="auth-title">Login to Zeus</h2>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="auth-form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                    <div id="login-error" class="auth-error"></div>
+                </form>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="switchToRegister()">Register</a>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form-container" style="display: none;">
+                <h2 class="auth-title">Create Account</h2>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="auth-form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required minlength="3">
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-fullname">Full Name (Optional)</label>
+                        <input type="text" id="register-fullname">
+                    </div>
+                    <button type="submit" class="auth-submit">Create Account</button>
+                    <div id="register-error" class="auth-error"></div>
+                </form>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="switchToLogin()">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

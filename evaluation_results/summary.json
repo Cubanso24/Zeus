@@ -1,0 +1,20 @@
+{
+  "model_path": "models/splunk-query-llm-v2",
+  "test_file": "data/processed/test_alpaca.jsonl",
+  "metrics": {
+    "exact_match": 0.0,
+    "normalized_exact_match": 0.0,
+    "token_overlap": 38.28780519785742,
+    "command_accuracy": 31.832453261024686,
+    "syntax_validity": 97.61904761904762,
+    "clarification_accuracy": 98.4126984126984,
+    "num_examples": 126
+  },
+  "statistics": {
+    "total_examples": 126,
+    "clarifications_predicted": 0,
+    "clarifications_reference": 2,
+    "syntax_valid": 123,
+    "syntax_valid_rate": 97.61904761904762
+  }
+}

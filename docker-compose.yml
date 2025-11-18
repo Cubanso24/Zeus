@@ -1,0 +1,66 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: zeus-postgres
+    environment:
+      POSTGRES_DB: zeus_db
+      POSTGRES_USER: zeus_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeus_password_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zeus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zeus_user -d zeus_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Zeus API - Scalable Service
+  zeus-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://zeus_user:${POSTGRES_PASSWORD:-zeus_password_change_me}@postgres:5432/zeus_db
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-me-in-production}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=10080
+      - HF_HOME=/app/.cache/huggingface
+    volumes:
+      - ./data/feedback:/app/data/feedback
+      - ./models:/app/models:ro
+      - ${HOME}/.cache/huggingface:/app/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - zeus-network
+    restart: unless-stopped
+    deploy:
+      replicas: 3  # Default number of instances
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: zeus-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./web:/usr/share/nginx/html:ro
+    depends_on:
+      - zeus-api
+    networks:
+      - zeus-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  zeus-network:
+    driver: bridge

@@ -1,0 +1,30 @@
+{"instruction": "Show me all connections from a specific internal IP address", "input": "", "output": "index=zeek sourcetype=zeek_conn id.orig_h=\"192.168.1.100\" | table _time id.orig_h id.resp_h id.resp_p proto service"}
+{"instruction": "Find all outbound connections on port 443", "input": "", "output": "index=zeek sourcetype=zeek_conn id.resp_p=443 | table _time id.orig_h id.resp_h proto"}
+{"instruction": "List the top 10 destination IPs by connection count", "input": "", "output": "index=zeek sourcetype=zeek_conn | stats count by id.resp_h | sort -count | head 10"}
+{"instruction": "Show me all failed connection attempts", "input": "", "output": "index=zeek sourcetype=zeek_conn conn_state=\"S0\" | table _time id.orig_h id.resp_h id.resp_p"}
+{"instruction": "Display connections with large data transfers", "input": "", "output": "index=zeek sourcetype=zeek_conn orig_bytes>10485760 | table _time id.orig_h id.resp_h orig_bytes resp_bytes"}
+{"instruction": "Find all SSH connections in the last hour", "input": "", "output": "index=zeek sourcetype=zeek_conn service=\"ssh\" earliest=-1h | table _time id.orig_h id.resp_h"}
+{"instruction": "Show connections lasting longer than 10 minutes", "input": "", "output": "index=zeek sourcetype=zeek_conn duration>600 | table _time id.orig_h id.resp_h duration service"}
+{"instruction": "List all unique services seen on the network", "input": "", "output": "index=zeek sourcetype=zeek_conn | stats count by service | sort service"}
+{"instruction": "Find connections to high-numbered ports", "input": "", "output": "index=zeek sourcetype=zeek_conn id.resp_p>10000 | table _time id.orig_h id.resp_h id.resp_p proto"}
+{"instruction": "Show me all rejected connections", "input": "", "output": "index=zeek sourcetype=zeek_conn conn_state=\"REJ\" | table _time id.orig_h id.resp_h id.resp_p"}
+{"instruction": "Show all DNS queries for a specific domain", "input": "", "output": "index=zeek sourcetype=zeek_dns query=\"example.com\" | table _time id.orig_h query answers"}
+{"instruction": "Find all NXDOMAIN responses", "input": "", "output": "index=zeek sourcetype=zeek_dns rcode_name=\"NXDOMAIN\" | table _time id.orig_h query"}
+{"instruction": "List the top 10 most queried domains", "input": "", "output": "index=zeek sourcetype=zeek_dns | stats count by query | sort -count | head 10"}
+{"instruction": "Show DNS queries from a specific internal host", "input": "", "output": "index=zeek sourcetype=zeek_dns id.orig_h=\"192.168.1.50\" | table _time query answers"}
+{"instruction": "Find all TXT record queries", "input": "", "output": "index=zeek sourcetype=zeek_dns qtype_name=\"TXT\" | table _time id.orig_h query answers"}
+{"instruction": "Display all DNS queries with no answers", "input": "", "output": "index=zeek sourcetype=zeek_dns rcode_name=\"SERVFAIL\" | table _time id.orig_h query"}
+{"instruction": "Show me all MX record lookups", "input": "", "output": "index=zeek sourcetype=zeek_dns qtype_name=\"MX\" | table _time id.orig_h query answers"}
+{"instruction": "Find queries to a specific DNS server", "input": "", "output": "index=zeek sourcetype=zeek_dns id.resp_h=\"8.8.8.8\" | table _time id.orig_h query answers"}
+{"instruction": "List all unique DNS query types", "input": "", "output": "index=zeek sourcetype=zeek_dns | stats count by qtype_name | sort -count"}
+{"instruction": "Show PTR reverse lookup queries", "input": "", "output": "index=zeek sourcetype=zeek_dns qtype_name=\"PTR\" | table _time id.orig_h query answers"}
+{"instruction": "Show all HTTP requests to a specific host", "input": "", "output": "index=zeek sourcetype=zeek_http host=\"example.com\" | table _time id.orig_h method uri"}
+{"instruction": "Find all HTTP POST requests", "input": "", "output": "index=zeek sourcetype=zeek_http method=\"POST\" | table _time id.orig_h host uri"}
+{"instruction": "Display all 404 errors", "input": "", "output": "index=zeek sourcetype=zeek_http status_code=404 | table _time id.orig_h host uri"}
+{"instruction": "Show all 500 series server errors", "input": "", "output": "index=zeek sourcetype=zeek_http status_code>=500 | table _time id.orig_h host uri status_code"}
+{"instruction": "List top 10 user agents", "input": "", "output": "index=zeek sourcetype=zeek_http | stats count by user_agent | sort -count | head 10"}
+{"instruction": "Find requests with large request bodies", "input": "", "output": "index=zeek sourcetype=zeek_http request_body_len>1048576 | table _time id.orig_h host uri request_body_len"}
+{"instruction": "Show all requests to admin paths", "input": "", "output": "index=zeek sourcetype=zeek_http uri=\"*/admin*\" | table _time id.orig_h host uri method"}
+{"instruction": "Display successful GET requests", "input": "", "output": "index=zeek sourcetype=zeek_http method=\"GET\" status_code=200 | table _time id.orig_h host uri"}
+{"instruction": "Find all requests with specific referrer", "input": "", "output": "index=zeek sourcetype=zeek_http referrer=\"*google*\" | table _time id.orig_h host uri referrer"}
+{"instruction": "Show HTTP requests from internal network", "input": "", "output": "index=zeek sourcetype=zeek_http id.orig_h=\"192.168.*\" | table _time id.orig_h host uri method"}

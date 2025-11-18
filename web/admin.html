@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeus Admin Dashboard - Splunk Query LLM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">Zeus Admin Login</h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+                        Username
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="username" type="text" placeholder="admin" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                        Password
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                           id="password" type="password" placeholder="Password" required>
+                </div>
+                <div id="login-error" class="mb-4 text-red-500 text-sm" style="display: none;"></div>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                        type="submit">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (hidden until logged in) -->
+    <div id="main-dashboard" style="display: none;">
+    <!-- Header -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold">Zeus Admin Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="admin-username" class="text-sm"></span>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="flex flex-wrap border-b">
+                <button onclick="switchTab('analytics')" class="tab-btn active px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    Analytics
+                </button>
+                <button onclick="switchTab('queries')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    Queries
+                </button>
+                <button onclick="switchTab('feedback')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    Feedback
+                </button>
+                <button onclick="switchTab('system')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    System
+                </button>
+                <button onclick="switchTab('training')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    Training
+                </button>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content active">
+            <h2 class="text-2xl font-bold mb-6">Analytics Overview</h2>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Total Queries</div>
+                    <div class="text-3xl font-bold mt-2" id="metric-total-queries">-</div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        <span id="metric-queries-today">-</span> today
+                    </div>
+                </div>
+
+                <div class="metric-card bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Total Users</div>
+                    <div class="text-3xl font-bold mt-2" id="metric-total-users">-</div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        <span id="metric-active-users">-</span> active (7d)
+                    </div>
+                </div>
+
+                <div class="metric-card bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Approval Rate</div>
+                    <div class="text-3xl font-bold mt-2 text-green-600" id="metric-approval-rate">-</div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        <span id="metric-total-feedback">-</span> feedback items
+                    </div>
+                </div>
+
+                <div class="metric-card bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Avg Queries/User</div>
+                    <div class="text-3xl font-bold mt-2" id="metric-avg-queries">-</div>
+                    <div class="text-sm text-gray-600 mt-2">
+                        Good: <span id="metric-good-count" class="text-green-600">-</span> |
+                        Bad: <span id="metric-bad-count" class="text-red-600">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Query Activity</h3>
+                    <canvas id="query-chart"></canvas>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Feedback Distribution</h3>
+                    <canvas id="feedback-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queries Tab -->
+        <div id="queries-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Query Management</h2>
+                <div class="flex space-x-2">
+                    <select id="query-rating-filter" onchange="loadQueries()" class="px-4 py-2 border rounded">
+                        <option value="">All Ratings</option>
+                        <option value="good">Good Only</option>
+                        <option value="bad">Bad Only</option>
+                    </select>
+                    <button onclick="loadQueries()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Instruction</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Generated Query</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feedback</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queries-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-700">
+                        Total: <span id="queries-total">0</span> queries
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="queries-prev" onclick="changeQueriesPage(-1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Previous
+                        </button>
+                        <span class="px-4 py-2">Page <span id="queries-page">1</span></span>
+                        <button id="queries-next" onclick="changeQueriesPage(1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Tab -->
+        <div id="feedback-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Feedback Management</h2>
+                <div class="flex space-x-2">
+                    <select id="feedback-rating-filter" onchange="loadFeedback()" class="px-4 py-2 border rounded">
+                        <option value="">All Ratings</option>
+                        <option value="good">Good Only</option>
+                        <option value="bad">Bad Only</option>
+                    </select>
+                    <button onclick="exportFeedback()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+                        Export Training Data
+                    </button>
+                    <button onclick="loadFeedback()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Instruction</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Corrected Query</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-700">
+                        Total: <span id="feedback-total">0</span> feedback items
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="feedback-prev" onclick="changeFeedbackPage(-1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Previous
+                        </button>
+                        <span class="px-4 py-2">Page <span id="feedback-page">1</span></span>
+                        <button id="feedback-next" onclick="changeFeedbackPage(1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Tab -->
+        <div id="system-tab" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">System Monitoring</h2>
+
+            <!-- System Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">CPU Usage</div>
+                    <div class="text-3xl font-bold mt-2" id="system-cpu">-</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
+                        <div id="system-cpu-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Memory Usage</div>
+                    <div class="text-3xl font-bold mt-2" id="system-memory">-</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
+                        <div id="system-memory-bar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">Disk Usage</div>
+                    <div class="text-3xl font-bold mt-2" id="system-disk">-</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
+                        <div id="system-disk-bar" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-gray-500 text-sm font-medium">System Uptime</div>
+                    <div class="text-2xl font-bold mt-2" id="system-uptime">-</div>
+                    <div class="text-sm text-gray-600 mt-4">
+                        Requests/min: <span id="system-rpm">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Table -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4">System Metrics</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="border rounded p-4">
+                        <div class="text-gray-500 text-sm">Total Requests</div>
+                        <div class="text-2xl font-bold mt-1" id="metrics-requests">-</div>
+                    </div>
+                    <div class="border rounded p-4">
+                        <div class="text-gray-500 text-sm">Avg Latency</div>
+                        <div class="text-2xl font-bold mt-1" id="metrics-latency">-</div>
+                    </div>
+                    <div class="border rounded p-4">
+                        <div class="text-gray-500 text-sm">Error Rate</div>
+                        <div class="text-2xl font-bold mt-1" id="metrics-errors">-</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button onclick="loadSystemStats()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Refresh Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Tab -->
+        <div id="training-tab" class="tab-content">
+            <h2 class="text-2xl font-bold mb-6">Model Training</h2>
+
+            <!-- Start Training Form -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Start New Training Job</h3>
+                <form onsubmit="startTraining(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Use Feedback Data
+                        </label>
+                        <input type="checkbox" id="training-use-feedback" checked class="h-4 w-4">
+                        <span class="ml-2 text-sm text-gray-600">Include user feedback in training data</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Minimum Rating
+                        </label>
+                        <select id="training-min-rating" class="w-full px-4 py-2 border rounded">
+                            <option value="">All feedback</option>
+                            <option value="good" selected>Good only</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Configuration (JSON, optional)
+                        </label>
+                        <textarea id="training-config" rows="4" class="w-full px-4 py-2 border rounded font-mono text-sm" placeholder='{"learning_rate": 2e-5, "epochs": 3}'></textarea>
+                    </div>
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded">
+                        Start Training Job
+                    </button>
+                </form>
+            </div>
+
+            <!-- Training Jobs History -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Training Job History</h3>
+                    <button onclick="loadTrainingJobs()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Refresh
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model Path</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="training-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Feedback Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Edit Feedback</h3>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="saveFeedbackEdit(event)" class="space-y-4">
+                <input type="hidden" id="edit-feedback-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Corrected Query</label>
+                    <textarea id="edit-corrected-query" rows="4" class="w-full px-4 py-2 border rounded"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+                    <textarea id="edit-comment" rows="2" class="w-full px-4 py-2 border rounded"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 border rounded hover:bg-gray-100">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:8080';
+        let authToken = localStorage.getItem('auth_token');
+        let currentUser = null;
+
+        // State
+        let queriesPage = 1;
+        let feedbackPage = 1;
+        let trainingPage = 1;
+
+        // Charts
+        let queryChart = null;
+        let feedbackChart = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!authToken) {
+                // Show login modal
+                document.getElementById('login-modal').style.display = 'flex';
+                document.getElementById('main-dashboard').style.display = 'none';
+                return;
+            }
+
+            // Check authentication and admin status
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Authentication failed');
+                }
+
+                currentUser = await response.json();
+
+                if (!currentUser.is_admin) {
+                    alert('Access denied. Admin privileges required.');
+                    localStorage.removeItem('auth_token');
+                    document.getElementById('login-modal').style.display = 'flex';
+                    document.getElementById('main-dashboard').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('admin-username').textContent = `Admin: ${currentUser.username}`;
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('main-dashboard').style.display = 'block';
+
+                // Load initial data
+                await loadAnalytics();
+                initCharts();
+            } catch (error) {
+                console.error('Auth error:', error);
+                localStorage.removeItem('auth_token');
+                document.getElementById('login-modal').style.display = 'flex';
+                document.getElementById('main-dashboard').style.display = 'none';
+            }
+        });
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load tab data
+            if (tabName === 'queries') loadQueries();
+            else if (tabName === 'feedback') loadFeedback();
+            else if (tabName === 'system') loadSystemStats();
+            else if (tabName === 'training') loadTrainingJobs();
+        }
+
+        // Analytics
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/analytics`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load analytics');
+
+                const data = await response.json();
+
+                // Update metrics
+                document.getElementById('metric-total-queries').textContent = data.total_queries.toLocaleString();
+                document.getElementById('metric-total-users').textContent = data.total_users.toLocaleString();
+                document.getElementById('metric-approval-rate').textContent = `${data.approval_rate}%`;
+                document.getElementById('metric-avg-queries').textContent = data.avg_queries_per_user.toFixed(1);
+                document.getElementById('metric-queries-today').textContent = data.queries_today;
+                document.getElementById('metric-active-users').textContent = data.active_users_7d;
+                document.getElementById('metric-total-feedback').textContent = data.total_feedback;
+                document.getElementById('metric-good-count').textContent = data.good_count;
+                document.getElementById('metric-bad-count').textContent = data.bad_count;
+
+                // Update charts
+                if (queryChart) {
+                    queryChart.data.datasets[0].data = [data.queries_today, data.queries_7d, data.queries_30d];
+                    queryChart.update();
+                }
+
+                if (feedbackChart) {
+                    feedbackChart.data.datasets[0].data = [data.good_count, data.bad_count];
+                    feedbackChart.update();
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        function initCharts() {
+            // Query chart
+            const queryCtx = document.getElementById('query-chart').getContext('2d');
+            queryChart = new Chart(queryCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Today', 'Last 7 Days', 'Last 30 Days'],
+                    datasets: [{
+                        label: 'Queries',
+                        data: [0, 0, 0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Feedback chart
+            const feedbackCtx = document.getElementById('feedback-chart').getContext('2d');
+            feedbackChart = new Chart(feedbackCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Good', 'Bad'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                        borderColor: ['rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true
+                }
+            });
+        }
+
+        // Queries
+        async function loadQueries() {
+            try {
+                const rating = document.getElementById('query-rating-filter')?.value || '';
+                const url = new URL(`${API_BASE}/api/admin/queries`);
+                url.searchParams.append('page', queriesPage);
+                if (rating) url.searchParams.append('rating', rating);
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load queries');
+
+                const data = await response.json();
+                document.getElementById('queries-total').textContent = data.total;
+                document.getElementById('queries-page').textContent = queriesPage;
+
+                const tbody = document.getElementById('queries-table-body');
+                tbody.innerHTML = data.queries.map(q => `
+                    <tr>
+                        <td class="px-6 py-4 text-sm">${q.id}</td>
+                        <td class="px-6 py-4 text-sm">${q.username}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate">${q.instruction}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate font-mono text-xs">${q.generated_query}</td>
+                        <td class="px-6 py-4 text-sm">
+                            ${q.has_feedback ? `<span class="px-2 py-1 rounded text-xs ${q.feedback_rating === 'good' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${q.feedback_rating}</span>` : '-'}
+                        </td>
+                        <td class="px-6 py-4 text-sm">${new Date(q.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading queries:', error);
+            }
+        }
+
+        function changeQueriesPage(delta) {
+            queriesPage = Math.max(1, queriesPage + delta);
+            loadQueries();
+        }
+
+        // Feedback
+        async function loadFeedback() {
+            try {
+                const rating = document.getElementById('feedback-rating-filter')?.value || '';
+                const url = new URL(`${API_BASE}/api/admin/feedback`);
+                url.searchParams.append('page', feedbackPage);
+                if (rating) url.searchParams.append('rating', rating);
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load feedback');
+
+                const data = await response.json();
+                document.getElementById('feedback-total').textContent = data.total;
+                document.getElementById('feedback-page').textContent = feedbackPage;
+
+                const tbody = document.getElementById('feedback-table-body');
+                tbody.innerHTML = data.feedback.map(f => `
+                    <tr>
+                        <td class="px-6 py-4 text-sm">${f.id}</td>
+                        <td class="px-6 py-4 text-sm">${f.username}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${f.rating === 'good' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${f.rating}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate">${f.instruction}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate font-mono text-xs">${f.corrected_query || '-'}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <button onclick="editFeedback(${f.id}, '${(f.corrected_query || '').replace(/'/g, "\\'")}', '${(f.comment || '').replace(/'/g, "\\'")}' )" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                            <button onclick="deleteFeedback(${f.id})" class="text-red-600 hover:text-red-800">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading feedback:', error);
+            }
+        }
+
+        function changeFeedbackPage(delta) {
+            feedbackPage = Math.max(1, feedbackPage + delta);
+            loadFeedback();
+        }
+
+        function editFeedback(id, correctedQuery, comment) {
+            document.getElementById('edit-feedback-id').value = id;
+            document.getElementById('edit-corrected-query').value = correctedQuery;
+            document.getElementById('edit-comment').value = comment;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function saveFeedbackEdit(event) {
+            event.preventDefault();
+            const id = document.getElementById('edit-feedback-id').value;
+            const correctedQuery = document.getElementById('edit-corrected-query').value;
+            const comment = document.getElementById('edit-comment').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/feedback/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ corrected_query: correctedQuery, comment })
+                });
+
+                if (!response.ok) throw new Error('Failed to update feedback');
+
+                alert('Feedback updated successfully');
+                closeEditModal();
+                loadFeedback();
+            } catch (error) {
+                console.error('Error updating feedback:', error);
+                alert('Failed to update feedback');
+            }
+        }
+
+        async function deleteFeedback(id) {
+            if (!confirm('Are you sure you want to delete this feedback?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/feedback/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete feedback');
+
+                alert('Feedback deleted successfully');
+                loadFeedback();
+            } catch (error) {
+                console.error('Error deleting feedback:', error);
+                alert('Failed to delete feedback');
+            }
+        }
+
+        async function exportFeedback() {
+            try {
+                const rating = document.getElementById('feedback-rating-filter')?.value || '';
+                const url = new URL(`${API_BASE}/api/admin/feedback/export`);
+                if (rating) url.searchParams.append('rating', rating);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to export feedback');
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `feedback_export_${new Date().toISOString().split('T')[0]}.jsonl`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (error) {
+                console.error('Error exporting feedback:', error);
+                alert('Failed to export feedback');
+            }
+        }
+
+        // System
+        async function loadSystemStats() {
+            try {
+                // Load system stats
+                const statsResponse = await fetch(`${API_BASE}/api/admin/system/stats`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    document.getElementById('system-cpu').textContent = `${stats.cpu_percent}%`;
+                    document.getElementById('system-cpu-bar').style.width = `${stats.cpu_percent}%`;
+
+                    const memoryGB = (stats.memory_used / 1024 / 1024 / 1024).toFixed(1);
+                    document.getElementById('system-memory').textContent = `${stats.memory_percent}%`;
+                    document.getElementById('system-memory-bar').style.width = `${stats.memory_percent}%`;
+
+                    document.getElementById('system-disk').textContent = `${stats.disk_percent}%`;
+                    document.getElementById('system-disk-bar').style.width = `${stats.disk_percent}%`;
+
+                    const days = Math.floor(stats.uptime_seconds / 86400);
+                    const hours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+                    document.getElementById('system-uptime').textContent = `${days}d ${hours}h`;
+                }
+
+                // Load metrics
+                const metricsResponse = await fetch(`${API_BASE}/api/admin/system/metrics`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (metricsResponse.ok) {
+                    const metrics = await metricsResponse.json();
+                    document.getElementById('metrics-requests').textContent = metrics.total_requests.toLocaleString();
+                    document.getElementById('metrics-latency').textContent = `${metrics.avg_latency_ms.toFixed(1)}ms`;
+                    document.getElementById('metrics-errors').textContent = `${metrics.error_rate.toFixed(2)}%`;
+                    document.getElementById('system-rpm').textContent = metrics.requests_per_minute.toFixed(1);
+                }
+            } catch (error) {
+                console.error('Error loading system stats:', error);
+            }
+        }
+
+        // Training
+        async function startTraining(event) {
+            event.preventDefault();
+
+            const useFeedback = document.getElementById('training-use-feedback').checked;
+            const minRating = document.getElementById('training-min-rating').value;
+            const configText = document.getElementById('training-config').value;
+
+            let config = null;
+            if (configText.trim()) {
+                try {
+                    config = JSON.parse(configText);
+                } catch (error) {
+                    alert('Invalid JSON configuration');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/training/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        use_feedback_data: useFeedback,
+                        min_rating: minRating || null,
+                        config
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to start training');
+
+                const job = await response.json();
+                alert(`Training job ${job.id} started successfully!`);
+                loadTrainingJobs();
+            } catch (error) {
+                console.error('Error starting training:', error);
+                alert('Failed to start training job');
+            }
+        }
+
+        async function loadTrainingJobs() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/training/jobs?page=${trainingPage}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load training jobs');
+
+                const data = await response.json();
+
+                const tbody = document.getElementById('training-table-body');
+                tbody.innerHTML = data.jobs.map(j => `
+                    <tr>
+                        <td class="px-6 py-4 text-sm">${j.id}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${
+                                j.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                j.status === 'running' ? 'bg-blue-100 text-blue-800' :
+                                j.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                            }">${j.status}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm">${j.start_time ? new Date(j.start_time).toLocaleString() : '-'}</td>
+                        <td class="px-6 py-4 text-sm">${j.end_time ? new Date(j.end_time).toLocaleString() : '-'}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate">${j.model_output_path || '-'}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate text-red-600">${j.error_message || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading training jobs:', error);
+            }
+        }
+
+        // Handle login
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid credentials');
+                }
+
+                const data = await response.json();
+
+                if (!data.user.is_admin) {
+                    errorDiv.textContent = 'Access denied. Admin privileges required.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                localStorage.setItem('auth_token', data.access_token);
+                authToken = data.access_token;
+                currentUser = data.user;
+
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('main-dashboard').style.display = 'block';
+                document.getElementById('admin-username').textContent = currentUser.username;
+
+                // Load initial data
+                loadAnalytics();
+            } catch (error) {
+                errorDiv.textContent = 'Login failed. Please check your credentials.';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('auth_token');
+            authToken = null;
+            currentUser = null;
+            document.getElementById('main-dashboard').style.display = 'none';
+            document.getElementById('login-modal').style.display = 'flex';
+            document.getElementById('login-form').reset();
+        }
+
+        // Auto-refresh system stats every 30 seconds when on system tab
+        setInterval(() => {
+            const systemTab = document.getElementById('system-tab');
+            if (systemTab.classList.contains('active')) {
+                loadSystemStats();
+            }
+        }, 30000);
+    </script>
+    </div> <!-- Close main-dashboard -->
+</body>
+</html>

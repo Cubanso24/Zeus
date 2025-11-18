@@ -1,0 +1,127 @@
+instruction,exact_match,normalized_match,token_overlap,command_accuracy,syntax_valid,clarification_match
+Show connections to high ports,0.0,0.0,0.13043478260869565,0.2857142857142857,True,1.0
+Identify beaconing activity based on regular intervals,0.0,0.0,0.4193548387096774,0.4,True,1.0
+How many distinct user agents have accessed my website?,0.0,0.0,0.12244897959183675,0.2857142857142857,True,1.0
+Detect port scanning activity,0.0,0.0,0.32967032967032966,0.5,False,1.0
+Calculate average response time for web requests,0.0,0.0,0.3448275862068965,0.2857142857142857,True,1.0
+Find compromised accounts,0.0,0.0,0.032,0.0,True,0.0
+Identify DNS tunneling attempts,0.0,0.0,0.36781609195402304,0.4615384615384615,True,1.0
+"Map the path of a user's journey across the website, showing the sequence of pages visited.",0.0,0.0,0.22222222222222218,0.16666666666666669,True,1.0
+Get all tcp traffic logs,0.0,0.0,0.1621621621621622,0.0,True,1.0
+Show SSL certificate anomalies,0.0,0.0,0.6956521739130435,0.5,True,1.0
+Detect potential brute force against db-server,0.0,0.0,0.21568627450980393,0.5,True,1.0
+Find ProcessId=cmd.exe in zeek:smb logs,0.0,0.0,0.35294117647058826,0.0,True,1.0
+Show PTR reverse lookup queries,0.0,0.0,0.5,0.2857142857142857,True,1.0
+Group zeek:dce_rpc events by dest_ip and show percentages,0.0,0.0,0.7428571428571429,0.6666666666666666,True,1.0
+Find rare action values in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational,0.0,0.0,0.35294117647058826,0.25,True,1.0
+Detect vbs file downloads,0.0,0.0,0.16842105263157894,0.2222222222222222,True,1.0
+Search for malware in the last 8h,0.0,0.0,0.375,0.0,True,1.0
+Show me zeek:ntlm events where bytes contains administrator,0.0,0.0,0.2857142857142857,0.0,True,1.0
+Find all events containing the word 'malware' in the last hour,0.0,0.0,0.25,0.0,True,1.0
+List all datamodels in my environment.,0.0,0.0,0.125,0.2857142857142857,True,1.0
+Show SSL certificate anomalies,0.0,0.0,0.6956521739130435,0.5,True,1.0
+Find potential brute force attacks against user accounts,0.0,0.0,0.3225806451612903,0.4,True,1.0
+Show top 10 service from zeek:ssl,0.0,0.0,0.5714285714285715,0.4,True,1.0
+Show SSL certificate anomalies,0.0,0.0,0.6956521739130435,0.5,True,1.0
+Identify zeek:notice anomalies using standard deviation,0.0,0.0,0.85,0.888888888888889,True,1.0
+Show zeek:ssh logs between 4h ago and now,0.0,0.0,0.33333333333333337,0.0,True,1.0
+Concatenate the 'first_name' and 'last_name' fields into a 'full_name' field.,0.0,0.0,0.375,1.0,True,1.0
+Show all DNS queries for a specific domain,0.0,0.0,0.6086956521739131,0.5,True,1.0
+Show dest_port values sorted by frequency,0.0,0.0,0.5333333333333333,0.5,True,1.0
+List top 10 user agents,0.0,0.0,0.7200000000000001,0.8571428571428571,True,1.0
+Show me zeek:conn events where action contains root,0.0,0.0,0.3,0.0,True,1.0
+Identify DNS tunneling attempts,0.0,0.0,0.3720930232558139,0.4615384615384615,True,1.0
+Identify zeek:files anomalies using standard deviation,0.0,0.0,0.53125,0.6666666666666666,True,1.0
+Find hosts communicating with both 10.10.10.25 and 8.8.8.8,0.0,0.0,0.32432432432432434,0.3636363636363636,True,1.0
+"From my firewall logs, extract the source IP and destination port, and show me the top 10 most frequent combinations.",0.0,0.0,0.6153846153846154,0.8,True,1.0
+Find beaconing behavior in network connections,0.0,0.0,0.761904761904762,0.7499999999999999,True,1.0
+Find duration=encoded in zeek:notice logs,0.0,0.0,0.13953488372093023,0.0,True,1.0
+Detect beaconing behavior by analyzing connection intervals,0.0,0.0,0.16494845360824742,0.36363636363636365,True,1.0
+Find hosts communicating with both 1.1.1.1 and 192.168.1.50,0.0,0.0,0.40740740740740744,0.4444444444444445,True,1.0
+Find rare src_ip values in zeek:ssh,0.0,0.0,0.3870967741935484,0.25,True,1.0
+Detect dll file downloads,0.0,0.0,0.18461538461538463,0.19999999999999998,True,1.0
+Display all logs from source IP 192.168.1.50,0.0,0.0,0.04444444444444444,0.0,True,1.0
+Show all icmp connections to port 8080,0.0,0.0,0.2295081967213115,0.2222222222222222,True,1.0
+List all unique DNS query types,0.0,0.0,0.25531914893617025,0.4444444444444445,True,1.0
+Group XmlWinEventLog:Security events by bytes and show percentages,0.0,0.0,0.6341463414634146,0.6666666666666666,True,1.0
+Show zeek:ssh logs between 30d ago and now,0.0,0.0,0.35294117647058826,0.0,True,1.0
+Find all events with destination port 443,0.0,0.0,0.3076923076923077,0.0,True,1.0
+Find failed logon attempts from 10.10.10.25,0.0,0.0,0.2745098039215686,0.25,False,1.0
+Count unique destination IPs contacted by each source,0.0,0.0,0.30769230769230776,0.4444444444444444,True,1.0
+Show me all zeek:http logs from the last 4h,0.0,0.0,0.33333333333333337,0.0,True,1.0
+Get all events from host workstation-01,0.0,0.0,0.2666666666666667,0.0,True,1.0
+Find hosts communicating with both 192.168.1.100 and 172.16.5.10,0.0,0.0,0.46153846153846156,0.4444444444444445,True,1.0
+Show top 10 duration from zeek:notice,0.0,0.0,0.7499999999999999,0.6666666666666666,True,1.0
+Show all requests to admin paths,0.0,0.0,0.4736842105263158,0.33333333333333337,True,1.0
+List Splunk forwarders that have not sent any data in the last hour.,0.0,0.0,0.11538461538461539,0.25,True,1.0
+Get all udp traffic logs,0.0,0.0,0.1621621621621622,0.0,True,1.0
+Get statistics of resp_bytes grouped by answers,0.0,0.0,0.5,0.33333333333333337,True,1.0
+Find unique Image count by LogonType,0.0,0.0,0.22535211267605632,0.2857142857142857,True,1.0
+Group zeek:dce_rpc events by uri and show percentages,0.0,0.0,0.7428571428571429,0.6666666666666666,True,1.0
+Search for failure in the last 30d,0.0,0.0,0.3,0.0,True,1.0
+Show me zeek:ssh events where Computer contains cmd.exe,0.0,0.0,0.375,0.0,True,1.0
+Get statistics of packets grouped by Computer,0.0,0.0,0.5,0.33333333333333337,True,1.0
+Find processes created by winword.exe,0.0,0.0,0.8333333333333333,0.5,True,1.0
+Find events where ProcessId is not null,0.0,0.0,0.5,0.4,True,1.0
+Display all initiated TCP connections,0.0,0.0,0.13333333333333333,0.25,True,1.0
+Display connections to a specific IP address,0.0,0.0,0.07407407407407407,0.2857142857142857,True,1.0
+Identify XmlWinEventLog:Microsoft-Windows-Sysmon/Operational anomalies using standard deviation,0.0,0.0,0.6415094339622641,0.6666666666666666,True,1.0
+Find all TXT record queries,0.0,0.0,0.5925925925925926,0.4,True,1.0
+Calculate average packets per action,0.0,0.0,0.4615384615384615,0.2857142857142857,True,1.0
+Show me all zeek:http logs from the last 24h,0.0,0.0,0.3157894736842105,0.0,True,1.0
+Show dest_ip values sorted by frequency,0.0,0.0,0.4210526315789474,0.5,True,1.0
+Show failed Windows authentication attempts,0.0,0.0,0.32142857142857145,0.25,True,1.0
+Show zeek:software events over time in 1h intervals,0.0,0.0,0.3636363636363636,0.25,True,1.0
+Find events where proto is not null,0.0,0.0,0.5,0.4,True,1.0
+Find privilege escalation attempts,0.0,0.0,0.19047619047619044,0.2857142857142857,True,1.0
+Search for failed in the last 4h,0.0,0.0,0.33333333333333337,0.0,True,1.0
+Group zeek:conn events by proto and show percentages,0.0,0.0,0.7428571428571429,0.6666666666666666,True,1.0
+Show me performance issues,0.0,0.0,0.021052631578947368,0.0,True,0.0
+Show me all XmlWinEventLog:Security logs from the last 30d,0.0,0.0,0.2857142857142857,0.0,True,1.0
+Find processes created by services.exe,0.0,0.0,0.8333333333333333,0.5,True,1.0
+Get statistics of orig_bytes grouped by dest_ip,0.0,0.0,0.5454545454545454,0.33333333333333337,True,1.0
+Show a table of users and a sparkline of their activity over the last 7 days.,0.0,0.0,0.12903225806451613,0.0,True,1.0
+Show bottom 5 dest_ip by event count,0.0,0.0,0.5555555555555556,0.4,True,1.0
+Identify DNS tunneling attempts,0.0,0.0,0.36781609195402304,0.4615384615384615,True,1.0
+Find beaconing behavior in network connections,0.0,0.0,0.761904761904762,0.7499999999999999,True,1.0
+Get all events from host email-gateway,0.0,0.0,0.1142857142857143,0.0,True,1.0
+Show zeek:ssl events over time in 1m intervals,0.0,0.0,0.5,0.5,True,1.0
+Show SSL certificate anomalies,0.0,0.0,0.6956521739130435,0.5,True,1.0
+Group zeek:ntlm events by Image and show percentages,0.0,0.0,0.7428571428571429,0.6666666666666666,True,1.0
+Detect PowerShell execution events,0.0,0.0,0.43902439024390244,0.2857142857142857,True,1.0
+Show all 500 series server errors,0.0,0.0,0.1904761904761905,1.0,True,1.0
+Calculate total duration per hour,0.0,0.0,0.5263157894736842,0.5,True,1.0
+Show top 10 method from XmlWinEventLog:Security,0.0,0.0,0.4615384615384615,0.4,True,1.0
+Detect port scanning activity,0.0,0.0,0.3896103896103896,0.5,True,1.0
+Show me all failed connection attempts,0.0,0.0,0.07920792079207921,0.2857142857142857,True,1.0
+Show me all zeek:software logs from the last 15m,0.0,0.0,0.375,0.0,True,1.0
+Search for failed in the last 30d,0.0,0.0,0.17142857142857143,0.0,True,1.0
+Display all logs from source IP 192.168.1.100,0.0,0.0,0.041666666666666664,0.0,True,1.0
+Find registry persistence followed by scheduled task creation,0.0,0.0,0.3870967741935484,0.7692307692307693,True,1.0
+Find beaconing behavior in network connections,0.0,0.0,0.5853658536585366,0.6,True,1.0
+Find all processes executed from temp directories,0.0,0.0,0.27586206896551724,0.2222222222222222,False,1.0
+Find ParentImage=trojan in zeek:pe logs,0.0,0.0,0.3157894736842105,0.0,True,1.0
+Get all events from host server-dc01,0.0,0.0,0.2666666666666667,0.0,True,1.0
+Identify DNS tunneling attempts,0.0,0.0,0.34408602150537637,0.5454545454545454,True,1.0
+Display all 404 errors,0.0,0.0,0.19999999999999998,0.2857142857142857,True,1.0
+Get all udp traffic logs,0.0,0.0,0.1875,0.0,True,1.0
+Display HTTP traffic patterns by method over time,0.0,0.0,0.4666666666666667,0.4,True,1.0
+Show query values sorted by frequency,0.0,0.0,0.6956521739130436,0.5714285714285715,True,1.0
+List all unique services seen on the network,0.0,0.0,0.24390243902439024,0.5,True,1.0
+"For each product ID, calculate the total revenue and the number of unique customers who purchased it.",0.0,0.0,0.3902439024390244,0.25,True,1.0
+Get all events from host email-gateway,0.0,0.0,0.10526315789473684,0.0,True,1.0
+Find all events with destination port 139,0.0,0.0,0.08695652173913045,0.0,True,1.0
+Show zeek:dce_rpc logs between 2h ago and now,0.0,0.0,0.35294117647058826,0.0,True,1.0
+Find events where user is not null,0.0,0.0,0.5263157894736842,0.4,True,1.0
+Get all udp traffic logs,0.0,0.0,0.0821917808219178,0.0,True,1.0
+Show zeek:dce_rpc logs between 30d ago and now,0.0,0.0,0.35294117647058826,0.0,True,1.0
+Find all wscript or cscript executions,0.0,0.0,0.6285714285714286,0.4,True,1.0
+Show top 10 dest_ip from zeek:weird,0.0,0.0,0.7058823529411764,0.6666666666666666,True,1.0
+"For each git repository, list the top 3 users with the most commits in the last month.",0.0,0.0,0.3076923076923077,0.36363636363636365,True,1.0
+Search for unauthorized in the last 30m,0.0,0.0,0.375,0.0,True,1.0
+Get all events from host workstation-01,0.0,0.0,0.2666666666666667,0.0,True,1.0
+Get all tcp traffic logs,0.0,0.0,0.16666666666666669,0.0,True,1.0
+Show me zeek:smtp events where dest_ip contains powershell.exe,0.0,0.0,0.0821917808219178,0.0,True,1.0
+Detect data exfiltration by identifying large icmp transfers,0.0,0.0,0.588235294117647,0.6666666666666666,True,1.0
+Identify DNS tunneling attempts,0.0,0.0,0.37647058823529417,0.4615384615384615,True,1.0
+Calculate total duration per hour,0.0,0.0,0.5263157894736842,0.5,True,1.0

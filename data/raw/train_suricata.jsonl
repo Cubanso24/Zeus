@@ -1,0 +1,10 @@
+{"instruction": "Show all Suricata alerts", "input": "", "output": "index=suricata sourcetype=suricata_eve event_type=alert | table timestamp src_ip dest_ip alert.signature alert.severity"}
+{"instruction": "Find high severity alerts", "input": "", "output": "index=suricata event_type=alert alert.severity<=2 | table timestamp src_ip dest_ip alert.signature alert.category"}
+{"instruction": "Display alerts from a specific source IP", "input": "", "output": "index=suricata event_type=alert src_ip=\"192.168.1.50\" | table timestamp dest_ip alert.signature alert.action"}
+{"instruction": "Show all malware-related alerts", "input": "", "output": "index=suricata event_type=alert alert.category=\"*Malware*\" | table timestamp src_ip dest_ip alert.signature"}
+{"instruction": "Find alerts for a specific signature", "input": "", "output": "index=suricata event_type=alert alert.signature=\"ET SCAN*\" | table timestamp src_ip dest_ip dest_port"}
+{"instruction": "List top 10 alerting signatures", "input": "", "output": "index=suricata event_type=alert | stats count by alert.signature | sort -count | head 10"}
+{"instruction": "Show blocked traffic alerts", "input": "", "output": "index=suricata event_type=alert alert.action=\"blocked\" | table timestamp src_ip dest_ip alert.signature"}
+{"instruction": "Find alerts targeting a specific destination", "input": "", "output": "index=suricata event_type=alert dest_ip=\"10.0.50.100\" | table timestamp src_ip alert.signature alert.severity"}
+{"instruction": "Display exploit attempt alerts", "input": "", "output": "index=suricata event_type=alert alert.category=\"*Exploit*\" | table timestamp src_ip dest_ip alert.signature"}
+{"instruction": "Show alerts on port 443", "input": "", "output": "index=suricata event_type=alert dest_port=443 | table timestamp src_ip dest_ip alert.signature app_proto"}

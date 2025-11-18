@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeus Authentication Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+
+        .test-section {
+            background: #1e1e2e;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            color: #51cf66;
+            font-size: 14px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(81, 207, 102, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .user-info {
+            background: #2a2a3e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .user-info h3 {
+            color: #51cf66;
+            margin-bottom: 10px;
+        }
+
+        .user-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3a3a4e;
+        }
+
+        .user-detail:last-child {
+            border-bottom: none;
+        }
+
+        .label-text {
+            color: #999;
+        }
+
+        .value-text {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            margin-top: 15px;
+            background: #dc3545;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .auth-status {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .auth-status.authenticated {
+            background: rgba(81, 207, 102, 0.2);
+            color: #51cf66;
+        }
+
+        .auth-status.unauthenticated {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Zeus Authentication Test</h1>
+
+        <div id="auth-status" class="auth-status unauthenticated">
+            Not Authenticated
+        </div>
+
+        <div id="auth-forms" class="grid">
+            <!-- Login Form -->
+            <div class="test-section">
+                <h2>Login</h2>
+                <form id="login-form" onsubmit="testLogin(event)">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit">Login</button>
+                    <div id="login-error" class="error"></div>
+                    <div id="login-success" class="success"></div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div class="test-section">
+                <h2>Register</h2>
+                <form id="register-form" onsubmit="testRegister(event)">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required minlength="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-fullname">Full Name (Optional)</label>
+                        <input type="text" id="register-fullname">
+                    </div>
+                    <button type="submit">Create Account</button>
+                    <div id="register-error" class="error"></div>
+                    <div id="register-success" class="success"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- User Info Display -->
+        <div id="user-info-section" class="test-section" style="display: none;">
+            <h2>Current User</h2>
+            <div id="user-info-display"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let currentUser = null;
+        let authToken = null;
+
+        // Test login
+        async function testLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const successEl = document.getElementById('login-success');
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+
+            errorEl.classList.remove('show');
+            successEl.classList.remove('show');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Login failed');
+                }
+
+                const data = await response.json();
+                authToken = data.access_token;
+                currentUser = data.user;
+
+                localStorage.setItem('zeus_auth_token', authToken);
+                localStorage.setItem('zeus_user_data', JSON.stringify(currentUser));
+
+                successEl.textContent = `Successfully logged in as ${currentUser.username}!`;
+                successEl.classList.add('show');
+                event.target.reset();
+
+                updateAuthStatus();
+                displayUserInfo();
+
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        }
+
+        // Test registration
+        async function testRegister(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const fullName = document.getElementById('register-fullname').value;
+            const errorEl = document.getElementById('register-error');
+            const successEl = document.getElementById('register-success');
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+
+            errorEl.classList.remove('show');
+            successEl.classList.remove('show');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating account...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        full_name: fullName || null,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Registration failed');
+                }
+
+                const data = await response.json();
+                authToken = data.access_token;
+                currentUser = data.user;
+
+                localStorage.setItem('zeus_auth_token', authToken);
+                localStorage.setItem('zeus_user_data', JSON.stringify(currentUser));
+
+                successEl.textContent = `Account created successfully! Welcome, ${currentUser.username}!`;
+                successEl.classList.add('show');
+                event.target.reset();
+
+                updateAuthStatus();
+                displayUserInfo();
+
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.classList.add('show');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        }
+
+        // Update authentication status
+        function updateAuthStatus() {
+            const statusEl = document.getElementById('auth-status');
+            if (authToken && currentUser) {
+                statusEl.textContent = `Authenticated as ${currentUser.username}`;
+                statusEl.className = 'auth-status authenticated';
+            } else {
+                statusEl.textContent = 'Not Authenticated';
+                statusEl.className = 'auth-status unauthenticated';
+            }
+        }
+
+        // Display user info
+        function displayUserInfo() {
+            if (!currentUser) {
+                document.getElementById('user-info-section').style.display = 'none';
+                return;
+            }
+
+            const infoEl = document.getElementById('user-info-display');
+            infoEl.innerHTML = `
+                <div class="user-info">
+                    <h3>User Information</h3>
+                    <div class="user-detail">
+                        <span class="label-text">ID:</span>
+                        <span class="value-text">${currentUser.id}</span>
+                    </div>
+                    <div class="user-detail">
+                        <span class="label-text">Username:</span>
+                        <span class="value-text">${currentUser.username}</span>
+                    </div>
+                    <div class="user-detail">
+                        <span class="label-text">Email:</span>
+                        <span class="value-text">${currentUser.email}</span>
+                    </div>
+                    <div class="user-detail">
+                        <span class="label-text">Full Name:</span>
+                        <span class="value-text">${currentUser.full_name || 'N/A'}</span>
+                    </div>
+                    <div class="user-detail">
+                        <span class="label-text">Admin:</span>
+                        <span class="value-text">${currentUser.is_admin ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div class="user-detail">
+                        <span class="label-text">Token:</span>
+                        <span class="value-text">${authToken.substring(0, 30)}...</span>
+                    </div>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            `;
+            document.getElementById('user-info-section').style.display = 'block';
+        }
+
+        // Logout
+        function logout() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('zeus_auth_token');
+            localStorage.removeItem('zeus_user_data');
+            updateAuthStatus();
+            document.getElementById('user-info-section').style.display = 'none';
+        }
+
+        // Check for existing authentication on load
+        window.addEventListener('DOMContentLoaded', () => {
+            authToken = localStorage.getItem('zeus_auth_token');
+            const userData = localStorage.getItem('zeus_user_data');
+
+            if (authToken && userData) {
+                try {
+                    currentUser = JSON.parse(userData);
+                    updateAuthStatus();
+                    displayUserInfo();
+                } catch (e) {
+                    console.error('Failed to parse user data:', e);
+                    logout();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

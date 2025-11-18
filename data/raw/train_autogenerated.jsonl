@@ -1,0 +1,1000 @@
+{"instruction": "Find status_code=root in zeek:dhcp logs", "input": "", "output": "index=* sourcetype=zeek:dhcp status_code=root"}
+{"instruction": "Find events where ProcessId is not null", "input": "", "output": "index=* ProcessId=* | where isnotnull(ProcessId)"}
+{"instruction": "Detect hta file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.hta | stats count by src_ip, uri"}
+{"instruction": "Find network connections from workstation-02", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=workstation-02 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Group zeek:dns events by method and show percentages", "input": "", "output": "index=* sourcetype=zeek:dns | stats count by method | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find rare LogonType values in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | rare limit=20 LogonType"}
+{"instruction": "Detect potential brute force against proxy-01", "input": "", "output": "index=* dest=proxy-01 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Show me all zeek:x509 logs from the last 30m", "input": "", "output": "index=* sourcetype=zeek:x509 earliest=-30m"}
+{"instruction": "Find rare host values in zeek:pe", "input": "", "output": "index=* sourcetype=zeek:pe | rare limit=20 host"}
+{"instruction": "Search for malware in the last 24h", "input": "", "output": "index=* malware earliest=-24h"}
+{"instruction": "Find action=admin in suricata logs", "input": "", "output": "index=* sourcetype=suricata action=admin"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Detect dll file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.dll | stats count by src_ip, uri"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show query values sorted by frequency", "input": "", "output": "index=* | stats count by query | sort -count"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Find events where status_code is not null", "input": "", "output": "index=* status_code=* | where isnotnull(status_code)"}
+{"instruction": "Get all events from host web-server", "input": "", "output": "index=* host=web-server"}
+{"instruction": "Find all events with destination port 21", "input": "", "output": "index=* dest_port=21"}
+{"instruction": "Show bottom 5 answers by event count", "input": "", "output": "index=* | rare limit=5 answers"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Find events where user is not null", "input": "", "output": "index=* user=* | where isnotnull(user)"}
+{"instruction": "Show me all zeek:software logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:software earliest=-4h"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 7d", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-7d"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Calculate average bytes per src_ip", "input": "", "output": "index=* | stats avg(bytes) by src_ip"}
+{"instruction": "Show bottom 5 query by event count", "input": "", "output": "index=* | rare limit=5 query"}
+{"instruction": "Group XmlWinEventLog:Security events by dest_port and show percentages", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | stats count by dest_port | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show top 10 status_code from zeek:ssh", "input": "", "output": "index=* sourcetype=zeek:ssh | top limit=10 status_code"}
+{"instruction": "Find processes created by winword.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*winword.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Show me all suricata logs from the last 15m", "input": "", "output": "index=* sourcetype=suricata earliest=-15m"}
+{"instruction": "Detect potential brute force against workstation-01", "input": "", "output": "index=* dest=workstation-01 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Detect data exfiltration by identifying large tcp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Show me all zeek:rdp logs from the last 30m", "input": "", "output": "index=* sourcetype=zeek:rdp earliest=-30m"}
+{"instruction": "Show top 10 signature from zeek:dns", "input": "", "output": "index=* sourcetype=zeek:dns | top limit=10 signature"}
+{"instruction": "Find all events with destination port 443", "input": "", "output": "index=* dest_port=443"}
+{"instruction": "Group zeek:notice events by ParentImage and show percentages", "input": "", "output": "index=* sourcetype=zeek:notice | stats count by ParentImage | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Calculate total bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(bytes)"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Find CommandLine=admin in zeek:dce_rpc logs", "input": "", "output": "index=* sourcetype=zeek:dce_rpc CommandLine=admin"}
+{"instruction": "Show me zeek:smb events where signature contains powershell.exe", "input": "", "output": "index=* sourcetype=zeek:smb signature=*powershell.exe*"}
+{"instruction": "Show zeek:dns logs between 1h ago and now", "input": "", "output": "index=* sourcetype=zeek:dns earliest=-1h"}
+{"instruction": "Find events where status_code is not null", "input": "", "output": "index=* status_code=* | where isnotnull(status_code)"}
+{"instruction": "Detect exe file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.exe | stats count by src_ip, uri"}
+{"instruction": "Search for denied in the last 12h", "input": "", "output": "index=* denied earliest=-12h"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show me zeek:ntlm events where severity contains service", "input": "", "output": "index=* sourcetype=zeek:ntlm severity=*service*"}
+{"instruction": "Show zeek:notice logs between 1h ago and now", "input": "", "output": "index=* sourcetype=zeek:notice earliest=-1h"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Get all events from host workstation-02", "input": "", "output": "index=* host=workstation-02"}
+{"instruction": "Identify XmlWinEventLog:Security anomalies using standard deviation", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Search for malware in the last 8h", "input": "", "output": "index=* malware earliest=-8h"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Search for denied in the last 1h", "input": "", "output": "index=* denied earliest=-1h"}
+{"instruction": "Get statistics of packets grouped by CommandLine", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by CommandLine"}
+{"instruction": "Group zeek:dhcp events by method and show percentages", "input": "", "output": "index=* sourcetype=zeek:dhcp | stats count by method | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Count XmlWinEventLog:Security events by Image", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | stats count by Image"}
+{"instruction": "Show bottom 5 uri by event count", "input": "", "output": "index=* | rare limit=5 uri"}
+{"instruction": "Find processes created by lsass.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*lsass.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Get all events from host db-server", "input": "", "output": "index=* host=db-server"}
+{"instruction": "Find events where status_code is not null", "input": "", "output": "index=* status_code=* | where isnotnull(status_code)"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs between 24h ago and now", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-24h"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Search for unauthorized in the last 2h", "input": "", "output": "index=* unauthorized earliest=-2h"}
+{"instruction": "Calculate average duration per duration", "input": "", "output": "index=* | stats avg(duration) by duration"}
+{"instruction": "Show zeek:ssl events over time in 5m intervals", "input": "", "output": "index=* sourcetype=zeek:ssl | timechart span=5m count"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Detect data exfiltration by identifying large tcp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show zeek:ssh logs between 30d ago and now", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-30d"}
+{"instruction": "Show zeek:dhcp events over time in 30m intervals", "input": "", "output": "index=* sourcetype=zeek:dhcp | timechart span=30m count"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Find failed logon attempts from 10.0.0.50", "input": "", "output": "index=* logon=failed src_ip=10.0.0.50 | stats count by user, src_ip"}
+{"instruction": "Identify zeek:rdp anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:rdp | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Search for denied in the last 30d", "input": "", "output": "index=* denied earliest=-30d"}
+{"instruction": "Show all udp connections to port 3389", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp dest_port=3389 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Group zeek:http events by service and show percentages", "input": "", "output": "index=* sourcetype=zeek:http | stats count by service | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Calculate total duration per hour", "input": "", "output": "index=* | timechart span=1h sum(duration)"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Find failed connection attempts from 10.0.0.50", "input": "", "output": "index=* connection=failed src_ip=10.0.0.50 | stats count by user, src_ip"}
+{"instruction": "Show me zeek:files events where LogonType contains root", "input": "", "output": "index=* sourcetype=zeek:files LogonType=*root*"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Get all events from host db-server", "input": "", "output": "index=* host=db-server"}
+{"instruction": "Search for suspicious in the last 30m", "input": "", "output": "index=* suspicious earliest=-30m"}
+{"instruction": "Find ProcessId=cmd.exe in zeek:smb logs", "input": "", "output": "index=* sourcetype=zeek:smb ProcessId=cmd.exe"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Group zeek:conn events by CommandLine and show percentages", "input": "", "output": "index=* sourcetype=zeek:conn | stats count by CommandLine | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find rare src_ip values in zeek:ssh", "input": "", "output": "index=* sourcetype=zeek:ssh | rare limit=20 src_ip"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Display all logs from source IP 10.0.0.50", "input": "", "output": "index=* src_ip=10.0.0.50"}
+{"instruction": "Find rare TargetUserName values in zeek:dce_rpc", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | rare limit=20 TargetUserName"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Find rare src_ip values in zeek:conn", "input": "", "output": "index=* sourcetype=zeek:conn | rare limit=20 src_ip"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show zeek:software events over time in 1h intervals", "input": "", "output": "index=* sourcetype=zeek:software | timechart span=1h count"}
+{"instruction": "Identify XmlWinEventLog:Security anomalies using standard deviation", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Get statistics of resp_bytes grouped by answers", "input": "", "output": "index=* | stats count avg(resp_bytes) max(resp_bytes) min(resp_bytes) by answers"}
+{"instruction": "Find events where severity is not null", "input": "", "output": "index=* severity=* | where isnotnull(severity)"}
+{"instruction": "Find hosts communicating with both 10.0.5.20 and 10.0.5.20", "input": "", "output": "index=* (dest_ip=10.0.5.20 OR dest_ip=10.0.5.20) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Find unique TargetUserName count by src_port", "input": "", "output": "index=* | stats dc(TargetUserName) as unique_count by src_port"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Identify suricata anomalies using standard deviation", "input": "", "output": "index=* sourcetype=suricata | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Calculate average orig_bytes per duration", "input": "", "output": "index=* | stats avg(orig_bytes) by duration"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find network connections from server-dc01", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=server-dc01 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Show User values sorted by frequency", "input": "", "output": "index=* | stats count by User | sort -count"}
+{"instruction": "Calculate average duration per severity", "input": "", "output": "index=* | stats avg(duration) by severity"}
+{"instruction": "Display all logs from source IP 10.0.5.20", "input": "", "output": "index=* src_ip=10.0.5.20"}
+{"instruction": "Find processes created by chrome.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*chrome.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show me all zeek:http logs from the last 30m", "input": "", "output": "index=* sourcetype=zeek:http earliest=-30m"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 30d", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-30d"}
+{"instruction": "Get statistics of packets grouped by user", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by user"}
+{"instruction": "Calculate average packets per action", "input": "", "output": "index=* | stats avg(packets) by action"}
+{"instruction": "Find network connections from web-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=web-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Find rare host values in zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | rare limit=20 host"}
+{"instruction": "Find hosts communicating with both 172.16.5.10 and 192.168.1.50", "input": "", "output": "index=* (dest_ip=172.16.5.10 OR dest_ip=192.168.1.50) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Find failed access attempts from 10.10.10.25", "input": "", "output": "index=* access=failed src_ip=10.10.10.25 | stats count by user, src_ip"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs between 4h ago and now", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-4h"}
+{"instruction": "Find events where uri is not null", "input": "", "output": "index=* uri=* | where isnotnull(uri)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find rare proto values in zeek:conn", "input": "", "output": "index=* sourcetype=zeek:conn | rare limit=20 proto"}
+{"instruction": "Show me all zeek:weird logs from the last 7d", "input": "", "output": "index=* sourcetype=zeek:weird earliest=-7d"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Detect dll file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.dll | stats count by src_ip, uri"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find events where status_code is not null", "input": "", "output": "index=* status_code=* | where isnotnull(status_code)"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show top 10 dest_ip from zeek:weird", "input": "", "output": "index=* sourcetype=zeek:weird | top limit=10 dest_ip"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Find processes created by services.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*services.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Display all logs from source IP 192.168.100.5", "input": "", "output": "index=* src_ip=192.168.100.5"}
+{"instruction": "Find processes created by winword.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*winword.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show me zeek:ntlm events where bytes contains administrator", "input": "", "output": "index=* sourcetype=zeek:ntlm bytes=*administrator*"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Calculate total bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(bytes)"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show me zeek:software events where dest_ip contains phishing", "input": "", "output": "index=* sourcetype=zeek:software dest_ip=*phishing*"}
+{"instruction": "Show zeek:dce_rpc logs between 2h ago and now", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-2h"}
+{"instruction": "Identify suricata anomalies using standard deviation", "input": "", "output": "index=* sourcetype=suricata | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Get statistics of duration grouped by signature", "input": "", "output": "index=* | stats count avg(duration) max(duration) min(duration) by signature"}
+{"instruction": "Find rare uri values in zeek:dhcp", "input": "", "output": "index=* sourcetype=zeek:dhcp | rare limit=20 uri"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events over time in 30m intervals", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | timechart span=30m count"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Find events where Computer is not null", "input": "", "output": "index=* Computer=* | where isnotnull(Computer)"}
+{"instruction": "Find all events with destination port 22", "input": "", "output": "index=* dest_port=22"}
+{"instruction": "Show me zeek:software events where uri contains malware", "input": "", "output": "index=* sourcetype=zeek:software uri=*malware*"}
+{"instruction": "Find events where dest_ip is not null", "input": "", "output": "index=* dest_ip=* | where isnotnull(dest_ip)"}
+{"instruction": "Find rare duration values in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | rare limit=20 duration"}
+{"instruction": "Get all events from host web-server", "input": "", "output": "index=* host=web-server"}
+{"instruction": "Find failed access attempts from 192.168.1.50", "input": "", "output": "index=* access=failed src_ip=192.168.1.50 | stats count by user, src_ip"}
+{"instruction": "Identify XmlWinEventLog:Microsoft-Windows-Sysmon/Operational anomalies using standard deviation", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Show bottom 5 Image by event count", "input": "", "output": "index=* | rare limit=5 Image"}
+{"instruction": "Search for unauthorized in the last 30m", "input": "", "output": "index=* unauthorized earliest=-30m"}
+{"instruction": "Show me zeek:ssh events where query contains system", "input": "", "output": "index=* sourcetype=zeek:ssh query=*system*"}
+{"instruction": "Show top 10 ParentImage from zeek:x509", "input": "", "output": "index=* sourcetype=zeek:x509 | top limit=10 ParentImage"}
+{"instruction": "Identify zeek:smtp anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:smtp | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Find signature=administrator in zeek:files logs", "input": "", "output": "index=* sourcetype=zeek:files signature=administrator"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Search for warning in the last 7d", "input": "", "output": "index=* warning earliest=-7d"}
+{"instruction": "Find events where Computer is not null", "input": "", "output": "index=* Computer=* | where isnotnull(Computer)"}
+{"instruction": "Show zeek:ntlm logs between 2h ago and now", "input": "", "output": "index=* sourcetype=zeek:ntlm earliest=-2h"}
+{"instruction": "Calculate average orig_bytes per action", "input": "", "output": "index=* | stats avg(orig_bytes) by action"}
+{"instruction": "Search for denied in the last 7d", "input": "", "output": "index=* denied earliest=-7d"}
+{"instruction": "Find rare ParentImage values in zeek:rdp", "input": "", "output": "index=* sourcetype=zeek:rdp | rare limit=20 ParentImage"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show zeek:ssh events over time in 15m intervals", "input": "", "output": "index=* sourcetype=zeek:ssh | timechart span=15m count"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Detect vbs file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.vbs | stats count by src_ip, uri"}
+{"instruction": "Find network connections from web-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=web-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Find network connections from web-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=web-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Show signature values sorted by frequency", "input": "", "output": "index=* | stats count by signature | sort -count"}
+{"instruction": "Calculate total duration per hour", "input": "", "output": "index=* | timechart span=1h sum(duration)"}
+{"instruction": "Find all events with destination port 8080", "input": "", "output": "index=* dest_port=8080"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Get statistics of bytes grouped by duration", "input": "", "output": "index=* | stats count avg(bytes) max(bytes) min(bytes) by duration"}
+{"instruction": "Find failed access attempts from 1.1.1.1", "input": "", "output": "index=* access=failed src_ip=1.1.1.1 | stats count by user, src_ip"}
+{"instruction": "Show bottom 5 src_ip by event count", "input": "", "output": "index=* | rare limit=5 src_ip"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Calculate average packets per bytes", "input": "", "output": "index=* | stats avg(packets) by bytes"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Get all events from host fw-01", "input": "", "output": "index=* host=fw-01"}
+{"instruction": "Show me all zeek:ssl logs from the last 24h", "input": "", "output": "index=* sourcetype=zeek:ssl earliest=-24h"}
+{"instruction": "Find failed connection attempts from 192.168.1.100", "input": "", "output": "index=* connection=failed src_ip=192.168.1.100 | stats count by user, src_ip"}
+{"instruction": "Search for malware in the last 8h", "input": "", "output": "index=* malware earliest=-8h"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show top 10 LogonType from zeek:smtp", "input": "", "output": "index=* sourcetype=zeek:smtp | top limit=10 LogonType"}
+{"instruction": "Get statistics of orig_bytes grouped by bytes", "input": "", "output": "index=* | stats count avg(orig_bytes) max(orig_bytes) min(orig_bytes) by bytes"}
+{"instruction": "Search for suspicious in the last 4h", "input": "", "output": "index=* suspicious earliest=-4h"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Find hosts communicating with both 1.1.1.1 and 192.168.1.100", "input": "", "output": "index=* (dest_ip=1.1.1.1 OR dest_ip=192.168.1.100) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Find network connections from workstation-01", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=workstation-01 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Search for alert in the last 30m", "input": "", "output": "index=* alert earliest=-30m"}
+{"instruction": "Show me zeek:http events where signature contains administrator", "input": "", "output": "index=* sourcetype=zeek:http signature=*administrator*"}
+{"instruction": "Show host values sorted by frequency", "input": "", "output": "index=* | stats count by host | sort -count"}
+{"instruction": "Count zeek:ssl events by User", "input": "", "output": "index=* sourcetype=zeek:ssl | stats count by User"}
+{"instruction": "Get statistics of packets grouped by action", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by action"}
+{"instruction": "Get statistics of orig_bytes grouped by action", "input": "", "output": "index=* | stats count avg(orig_bytes) max(orig_bytes) min(orig_bytes) by action"}
+{"instruction": "Get statistics of orig_bytes grouped by dest_ip", "input": "", "output": "index=* | stats count avg(orig_bytes) max(orig_bytes) min(orig_bytes) by dest_ip"}
+{"instruction": "Find unique method count by signature", "input": "", "output": "index=* | stats dc(method) as unique_count by signature"}
+{"instruction": "Show top 10 ProcessId from zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | top limit=10 ProcessId"}
+{"instruction": "Show zeek:weird logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:weird earliest=-7d"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Get statistics of bytes grouped by status_code", "input": "", "output": "index=* | stats count avg(bytes) max(bytes) min(bytes) by status_code"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find failed authentication attempts from 10.10.10.25", "input": "", "output": "index=* authentication=failed src_ip=10.10.10.25 | stats count by user, src_ip"}
+{"instruction": "Find LogonType=suspicious in zeek:ssl logs", "input": "", "output": "index=* sourcetype=zeek:ssl LogonType=suspicious"}
+{"instruction": "Identify zeek:dce_rpc anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Detect potential brute force against fw-01", "input": "", "output": "index=* dest=fw-01 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Find unique proto count by user", "input": "", "output": "index=* | stats dc(proto) as unique_count by user"}
+{"instruction": "Get statistics of packets grouped by ParentImage", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by ParentImage"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Find events where duration is not null", "input": "", "output": "index=* duration=* | where isnotnull(duration)"}
+{"instruction": "Calculate average orig_bytes per ParentImage", "input": "", "output": "index=* | stats avg(orig_bytes) by ParentImage"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show zeek:dns logs between 30d ago and now", "input": "", "output": "index=* sourcetype=zeek:dns earliest=-30d"}
+{"instruction": "Get statistics of orig_bytes grouped by service", "input": "", "output": "index=* | stats count avg(orig_bytes) max(orig_bytes) min(orig_bytes) by service"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Get all events from host web-server", "input": "", "output": "index=* host=web-server"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Calculate total orig_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(orig_bytes)"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Detect rar file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.rar | stats count by src_ip, uri"}
+{"instruction": "Show me all zeek:notice logs from the last 7d", "input": "", "output": "index=* sourcetype=zeek:notice earliest=-7d"}
+{"instruction": "Find uri=system in zeek:http logs", "input": "", "output": "index=* sourcetype=zeek:http uri=system"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Show src_port values sorted by frequency", "input": "", "output": "index=* | stats count by src_port | sort -count"}
+{"instruction": "Get all events from host workstation-01", "input": "", "output": "index=* host=workstation-01"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Search for malware in the last 30d", "input": "", "output": "index=* malware earliest=-30d"}
+{"instruction": "Detect js file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.js | stats count by src_ip, uri"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Find network connections from web-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=web-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Show me zeek:files events where src_ip contains system", "input": "", "output": "index=* sourcetype=zeek:files src_ip=*system*"}
+{"instruction": "Show top 10 proto from suricata", "input": "", "output": "index=* sourcetype=suricata | top limit=10 proto"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find events where Computer is not null", "input": "", "output": "index=* Computer=* | where isnotnull(Computer)"}
+{"instruction": "Find processes created by svchost.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*svchost.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Show zeek:notice events over time in 10m intervals", "input": "", "output": "index=* sourcetype=zeek:notice | timechart span=10m count"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*c2server.xyz*) | table _time, src_ip, query, answers"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Show User values sorted by frequency", "input": "", "output": "index=* | stats count by User | sort -count"}
+{"instruction": "Find events where src_ip is not null", "input": "", "output": "index=* src_ip=* | where isnotnull(src_ip)"}
+{"instruction": "Find processes created by chrome.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*chrome.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Find all events with destination port 23", "input": "", "output": "index=* dest_port=23"}
+{"instruction": "Show me all zeek:http logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:http earliest=-4h"}
+{"instruction": "Group zeek:ntlm events by query and show percentages", "input": "", "output": "index=* sourcetype=zeek:ntlm | stats count by query | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find host=system in zeek:ssh logs", "input": "", "output": "index=* sourcetype=zeek:ssh host=system"}
+{"instruction": "Calculate average packets per src_port", "input": "", "output": "index=* | stats avg(packets) by src_port"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show me zeek:kerberos events where ParentImage contains cmd.exe", "input": "", "output": "index=* sourcetype=zeek:kerberos ParentImage=*cmd.exe*"}
+{"instruction": "Search for suspicious in the last 1h", "input": "", "output": "index=* suspicious earliest=-1h"}
+{"instruction": "Find rare action values in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | rare limit=20 action"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Find service=cmd.exe in XmlWinEventLog:Security logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security service=cmd.exe"}
+{"instruction": "Display all logs from source IP 10.0.5.20", "input": "", "output": "index=* src_ip=10.0.5.20"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show XmlWinEventLog:Security events over time in 1h intervals", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | timechart span=1h count"}
+{"instruction": "Find all events with destination port 22", "input": "", "output": "index=* dest_port=22"}
+{"instruction": "Find rare proto values in zeek:dns", "input": "", "output": "index=* sourcetype=zeek:dns | rare limit=20 proto"}
+{"instruction": "Detect data exfiltration by identifying large tcp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Find events where src_ip is not null", "input": "", "output": "index=* src_ip=* | where isnotnull(src_ip)"}
+{"instruction": "Show me zeek:weird events where LogonType contains system", "input": "", "output": "index=* sourcetype=zeek:weird LogonType=*system*"}
+{"instruction": "Search for failed in the last 4h", "input": "", "output": "index=* failed earliest=-4h"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Group zeek:dce_rpc events by dest_ip and show percentages", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | stats count by dest_ip | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show me zeek:dhcp events where proto contains malware", "input": "", "output": "index=* sourcetype=zeek:dhcp proto=*malware*"}
+{"instruction": "Show LogonType values sorted by frequency", "input": "", "output": "index=* | stats count by LogonType | sort -count"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Show duration values sorted by frequency", "input": "", "output": "index=* | stats count by duration | sort -count"}
+{"instruction": "Detect ps1 file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.ps1 | stats count by src_ip, uri"}
+{"instruction": "Get statistics of packets grouped by Computer", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by Computer"}
+{"instruction": "Show top 10 duration from zeek:notice", "input": "", "output": "index=* sourcetype=zeek:notice | top limit=10 duration"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Show zeek:weird events over time in 4h intervals", "input": "", "output": "index=* sourcetype=zeek:weird | timechart span=4h count"}
+{"instruction": "Get all events from host ubuntu-server", "input": "", "output": "index=* host=ubuntu-server"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Calculate average duration per src_port", "input": "", "output": "index=* | stats avg(duration) by src_port"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Calculate average resp_bytes per Image", "input": "", "output": "index=* | stats avg(resp_bytes) by Image"}
+{"instruction": "Show bottom 5 query by event count", "input": "", "output": "index=* | rare limit=5 query"}
+{"instruction": "Count zeek:rdp events by dest_port", "input": "", "output": "index=* sourcetype=zeek:rdp | stats count by dest_port"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Identify zeek:smtp anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:smtp | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Find User=service in zeek:smb logs", "input": "", "output": "index=* sourcetype=zeek:smb User=service"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Find unique ProcessId count by User", "input": "", "output": "index=* | stats dc(ProcessId) as unique_count by User"}
+{"instruction": "Get all events from host proxy-01", "input": "", "output": "index=* host=proxy-01"}
+{"instruction": "Show src_port values sorted by frequency", "input": "", "output": "index=* | stats count by src_port | sort -count"}
+{"instruction": "Detect potential brute force against ubuntu-server", "input": "", "output": "index=* dest=ubuntu-server action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Count zeek:pe events by CommandLine", "input": "", "output": "index=* sourcetype=zeek:pe | stats count by CommandLine"}
+{"instruction": "Show me all zeek:ssh logs from the last 30d", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-30d"}
+{"instruction": "Find rare proto values in zeek:http", "input": "", "output": "index=* sourcetype=zeek:http | rare limit=20 proto"}
+{"instruction": "Find all events with destination port 23", "input": "", "output": "index=* dest_port=23"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Find unique signature count by src_port", "input": "", "output": "index=* | stats dc(signature) as unique_count by src_port"}
+{"instruction": "Find network connections from fw-01", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=fw-01 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Find all events with destination port 8080", "input": "", "output": "index=* dest_port=8080"}
+{"instruction": "Get all events from host db-server", "input": "", "output": "index=* host=db-server"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show suricata events over time in 4h intervals", "input": "", "output": "index=* sourcetype=suricata | timechart span=4h count"}
+{"instruction": "Find unique EventCode count by host", "input": "", "output": "index=* | stats dc(EventCode) as unique_count by host"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Detect potential brute force against win10-client", "input": "", "output": "index=* dest=win10-client action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Show me all zeek:dns logs from the last 30m", "input": "", "output": "index=* sourcetype=zeek:dns earliest=-30m"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Find rare proto values in zeek:ssh", "input": "", "output": "index=* sourcetype=zeek:ssh | rare limit=20 proto"}
+{"instruction": "Detect vbs file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.vbs | stats count by src_ip, uri"}
+{"instruction": "Show zeek:dce_rpc logs between 12h ago and now", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-12h"}
+{"instruction": "Show XmlWinEventLog:Security logs between 2h ago and now", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-2h"}
+{"instruction": "Show bottom 5 src_port by event count", "input": "", "output": "index=* | rare limit=5 src_port"}
+{"instruction": "Search for unauthorized in the last 12h", "input": "", "output": "index=* unauthorized earliest=-12h"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*phishing.com*) | table _time, src_ip, query, answers"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Show me zeek:software events where duration contains trojan", "input": "", "output": "index=* sourcetype=zeek:software duration=*trojan*"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*malware-host.net*) | table _time, src_ip, query, answers"}
+{"instruction": "Find src_ip=malware in zeek:ntlm logs", "input": "", "output": "index=* sourcetype=zeek:ntlm src_ip=malware"}
+{"instruction": "Show zeek:software logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:software earliest=-7d"}
+{"instruction": "Show top 10 bytes from zeek:weird", "input": "", "output": "index=* sourcetype=zeek:weird | top limit=10 bytes"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Find events where proto is not null", "input": "", "output": "index=* proto=* | where isnotnull(proto)"}
+{"instruction": "Show zeek:dhcp logs between 4h ago and now", "input": "", "output": "index=* sourcetype=zeek:dhcp earliest=-4h"}
+{"instruction": "Show me zeek:http events where ProcessId contains administrator", "input": "", "output": "index=* sourcetype=zeek:http ProcessId=*administrator*"}
+{"instruction": "Group zeek:ssl events by status_code and show percentages", "input": "", "output": "index=* sourcetype=zeek:ssl | stats count by status_code | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show top 10 Image from zeek:rdp", "input": "", "output": "index=* sourcetype=zeek:rdp | top limit=10 Image"}
+{"instruction": "Detect potential brute force against email-gateway", "input": "", "output": "index=* dest=email-gateway action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Show bottom 5 ProcessId by event count", "input": "", "output": "index=* | rare limit=5 ProcessId"}
+{"instruction": "Find ParentImage=root in suricata logs", "input": "", "output": "index=* sourcetype=suricata ParentImage=root"}
+{"instruction": "Show me all zeek:conn logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:conn earliest=-2h"}
+{"instruction": "Count zeek:notice events by proto", "input": "", "output": "index=* sourcetype=zeek:notice | stats count by proto"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Identify zeek:pe anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:pe | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Get all events from host fw-01", "input": "", "output": "index=* host=fw-01"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Display all logs from source IP 10.0.0.50", "input": "", "output": "index=* src_ip=10.0.0.50"}
+{"instruction": "Group zeek:software events by ParentImage and show percentages", "input": "", "output": "index=* sourcetype=zeek:software | stats count by ParentImage | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Show top 10 CommandLine from zeek:ntlm", "input": "", "output": "index=* sourcetype=zeek:ntlm | top limit=10 CommandLine"}
+{"instruction": "Show zeek:kerberos logs between 4h ago and now", "input": "", "output": "index=* sourcetype=zeek:kerberos earliest=-4h"}
+{"instruction": "Search for malware in the last 24h", "input": "", "output": "index=* malware earliest=-24h"}
+{"instruction": "Find dest_ip=malware in zeek:rdp logs", "input": "", "output": "index=* sourcetype=zeek:rdp dest_ip=malware"}
+{"instruction": "Detect data exfiltration by identifying large tcp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Get all events from host ubuntu-server", "input": "", "output": "index=* host=ubuntu-server"}
+{"instruction": "Find events where method is not null", "input": "", "output": "index=* method=* | where isnotnull(method)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show uri values sorted by frequency", "input": "", "output": "index=* | stats count by uri | sort -count"}
+{"instruction": "Show zeek:rdp events over time in 10m intervals", "input": "", "output": "index=* sourcetype=zeek:rdp | timechart span=10m count"}
+{"instruction": "Find all events with destination port 3389", "input": "", "output": "index=* dest_port=3389"}
+{"instruction": "Find all events with destination port 22", "input": "", "output": "index=* dest_port=22"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Find all events with destination port 21", "input": "", "output": "index=* dest_port=21"}
+{"instruction": "Find severity=phishing in zeek:x509 logs", "input": "", "output": "index=* sourcetype=zeek:x509 severity=phishing"}
+{"instruction": "Group zeek:dce_rpc events by uri and show percentages", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | stats count by uri | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs between 12h ago and now", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-12h"}
+{"instruction": "Find service=encoded in zeek:http logs", "input": "", "output": "index=* sourcetype=zeek:http service=encoded"}
+{"instruction": "Find hosts communicating with both 1.1.1.1 and 192.168.1.50", "input": "", "output": "index=* (dest_ip=1.1.1.1 OR dest_ip=192.168.1.50) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Search for suspicious in the last 30m", "input": "", "output": "index=* suspicious earliest=-30m"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Find events where status_code is not null", "input": "", "output": "index=* status_code=* | where isnotnull(status_code)"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Show top 10 method from XmlWinEventLog:Security", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | top limit=10 method"}
+{"instruction": "Show me all zeek:ssh logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-1h"}
+{"instruction": "Display all logs from source IP 10.0.5.20", "input": "", "output": "index=* src_ip=10.0.5.20"}
+{"instruction": "Group zeek:ssh events by answers and show percentages", "input": "", "output": "index=* sourcetype=zeek:ssh | stats count by answers | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show bottom 5 EventCode by event count", "input": "", "output": "index=* | rare limit=5 EventCode"}
+{"instruction": "Find all events with destination port 3306", "input": "", "output": "index=* dest_port=3306"}
+{"instruction": "Calculate average packets per EventCode", "input": "", "output": "index=* | stats avg(packets) by EventCode"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find failed logon attempts from 10.10.10.25", "input": "", "output": "index=* logon=failed src_ip=10.10.10.25 | stats count by user, src_ip"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Get all events from host server-dc01", "input": "", "output": "index=* host=server-dc01"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 15m", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-15m"}
+{"instruction": "Find all events with destination port 3389", "input": "", "output": "index=* dest_port=3389"}
+{"instruction": "Show bytes values sorted by frequency", "input": "", "output": "index=* | stats count by bytes | sort -count"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Find rare host values in zeek:kerberos", "input": "", "output": "index=* sourcetype=zeek:kerberos | rare limit=20 host"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*badactor.org*) | table _time, src_ip, query, answers"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Get statistics of bytes grouped by user", "input": "", "output": "index=* | stats count avg(bytes) max(bytes) min(bytes) by user"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Get all events from host server-dc01", "input": "", "output": "index=* host=server-dc01"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events over time in 1m intervals", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | timechart span=1m count"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Get all events from host fw-01", "input": "", "output": "index=* host=fw-01"}
+{"instruction": "Count zeek:conn events by method", "input": "", "output": "index=* sourcetype=zeek:conn | stats count by method"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show dest_ip values sorted by frequency", "input": "", "output": "index=* | stats count by dest_ip | sort -count"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Display all logs from source IP 8.8.8.8", "input": "", "output": "index=* src_ip=8.8.8.8"}
+{"instruction": "Group XmlWinEventLog:Security events by bytes and show percentages", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | stats count by bytes | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs between 2h ago and now", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-2h"}
+{"instruction": "Group zeek:files events by Computer and show percentages", "input": "", "output": "index=* sourcetype=zeek:files | stats count by Computer | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Count zeek:rdp events by EventCode", "input": "", "output": "index=* sourcetype=zeek:rdp | stats count by EventCode"}
+{"instruction": "Get all events from host email-gateway", "input": "", "output": "index=* host=email-gateway"}
+{"instruction": "Show me zeek:http events where User contains encoded", "input": "", "output": "index=* sourcetype=zeek:http User=*encoded*"}
+{"instruction": "Get statistics of bytes grouped by user", "input": "", "output": "index=* | stats count avg(bytes) max(bytes) min(bytes) by user"}
+{"instruction": "Find hosts communicating with both 1.1.1.1 and 1.1.1.1", "input": "", "output": "index=* (dest_ip=1.1.1.1 OR dest_ip=1.1.1.1) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Count zeek:dhcp events by duration", "input": "", "output": "index=* sourcetype=zeek:dhcp | stats count by duration"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Show bottom 5 method by event count", "input": "", "output": "index=* | rare limit=5 method"}
+{"instruction": "Get statistics of packets grouped by signature", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by signature"}
+{"instruction": "Show me all zeek:smtp logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:smtp earliest=-1h"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Show me all XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs from the last 7d", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-7d"}
+{"instruction": "Show zeek:ssh logs between 15m ago and now", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-15m"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show me all zeek:software logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:software earliest=-2h"}
+{"instruction": "Identify zeek:pe anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:pe | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show bottom 5 status_code by event count", "input": "", "output": "index=* | rare limit=5 status_code"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show User values sorted by frequency", "input": "", "output": "index=* | stats count by User | sort -count"}
+{"instruction": "Calculate average packets per duration", "input": "", "output": "index=* | stats avg(packets) by duration"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Find all events with destination port 443", "input": "", "output": "index=* dest_port=443"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show bottom 5 service by event count", "input": "", "output": "index=* | rare limit=5 service"}
+{"instruction": "Show zeek:rdp logs between 30m ago and now", "input": "", "output": "index=* sourcetype=zeek:rdp earliest=-30m"}
+{"instruction": "Show me zeek:smtp events where dest_ip contains powershell.exe", "input": "", "output": "index=* sourcetype=zeek:smtp dest_ip=*powershell.exe*"}
+{"instruction": "Show zeek:ssl logs between 15m ago and now", "input": "", "output": "index=* sourcetype=zeek:ssl earliest=-15m"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show top 10 ParentImage from zeek:x509", "input": "", "output": "index=* sourcetype=zeek:x509 | top limit=10 ParentImage"}
+{"instruction": "Identify zeek:conn anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:conn | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show dest_port values sorted by frequency", "input": "", "output": "index=* | stats count by dest_port | sort -count"}
+{"instruction": "Find service=root in zeek:rdp logs", "input": "", "output": "index=* sourcetype=zeek:rdp service=root"}
+{"instruction": "Show bottom 5 src_port by event count", "input": "", "output": "index=* | rare limit=5 src_port"}
+{"instruction": "Show zeek:weird events over time in 15m intervals", "input": "", "output": "index=* sourcetype=zeek:weird | timechart span=15m count"}
+{"instruction": "Show me XmlWinEventLog:Security events where TargetUserName contains suspicious", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security TargetUserName=*suspicious*"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show me all zeek:rdp logs from the last 24h", "input": "", "output": "index=* sourcetype=zeek:rdp earliest=-24h"}
+{"instruction": "Show all udp connections to port 21", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp dest_port=21 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Detect potential brute force against email-gateway", "input": "", "output": "index=* dest=email-gateway action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Find events where src_ip is not null", "input": "", "output": "index=* src_ip=* | where isnotnull(src_ip)"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Identify zeek:notice anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:notice | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Show bottom 5 host by event count", "input": "", "output": "index=* | rare limit=5 host"}
+{"instruction": "Count zeek:http events by host", "input": "", "output": "index=* sourcetype=zeek:http | stats count by host"}
+{"instruction": "Find events where query is not null", "input": "", "output": "index=* query=* | where isnotnull(query)"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find rare query values in XmlWinEventLog:Security", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | rare limit=20 query"}
+{"instruction": "Show me zeek:kerberos events where bytes contains trojan", "input": "", "output": "index=* sourcetype=zeek:kerberos bytes=*trojan*"}
+{"instruction": "Find unique duration count by host", "input": "", "output": "index=* | stats dc(duration) as unique_count by host"}
+{"instruction": "Show zeek:files logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:files earliest=-7d"}
+{"instruction": "Find duration=suspicious in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational duration=suspicious"}
+{"instruction": "Identify zeek:pe anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:pe | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show bottom 5 src_ip by event count", "input": "", "output": "index=* | rare limit=5 src_ip"}
+{"instruction": "Show me all zeek:http logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:http earliest=-4h"}
+{"instruction": "Display all logs from source IP 10.0.0.50", "input": "", "output": "index=* src_ip=10.0.0.50"}
+{"instruction": "Calculate average duration per service", "input": "", "output": "index=* | stats avg(duration) by service"}
+{"instruction": "Show zeek:smb logs between 15m ago and now", "input": "", "output": "index=* sourcetype=zeek:smb earliest=-15m"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show top 10 Computer from zeek:smtp", "input": "", "output": "index=* sourcetype=zeek:smtp | top limit=10 Computer"}
+{"instruction": "Find src_port=service in zeek:smb logs", "input": "", "output": "index=* sourcetype=zeek:smb src_port=service"}
+{"instruction": "Show zeek:ssh logs between 4h ago and now", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-4h"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 1h", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-1h"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show me zeek:conn events where action contains root", "input": "", "output": "index=* sourcetype=zeek:conn action=*root*"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show top 10 User from zeek:x509", "input": "", "output": "index=* sourcetype=zeek:x509 | top limit=10 User"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Find unique Image count by LogonType", "input": "", "output": "index=* | stats dc(Image) as unique_count by LogonType"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Detect dll file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.dll | stats count by src_ip, uri"}
+{"instruction": "Find processes created by lsass.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*lsass.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Show bottom 5 host by event count", "input": "", "output": "index=* | rare limit=5 host"}
+{"instruction": "Display all logs from source IP 10.0.0.50", "input": "", "output": "index=* src_ip=10.0.0.50"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show me all zeek:http logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:http earliest=-4h"}
+{"instruction": "Find unique action count by signature", "input": "", "output": "index=* | stats dc(action) as unique_count by signature"}
+{"instruction": "Show me all XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs from the last 24h", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-24h"}
+{"instruction": "Show me zeek:rdp events where proto contains admin", "input": "", "output": "index=* sourcetype=zeek:rdp proto=*admin*"}
+{"instruction": "Find events where action is not null", "input": "", "output": "index=* action=* | where isnotnull(action)"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*evil.net*) | table _time, src_ip, query, answers"}
+{"instruction": "Show me zeek:dce_rpc events where User contains root", "input": "", "output": "index=* sourcetype=zeek:dce_rpc User=*root*"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Search for unauthorized in the last 15m", "input": "", "output": "index=* unauthorized earliest=-15m"}
+{"instruction": "Calculate total bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(bytes)"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show me all zeek:pe logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:pe earliest=-2h"}
+{"instruction": "Get all events from host fw-01", "input": "", "output": "index=* host=fw-01"}
+{"instruction": "Search for failure in the last 2h", "input": "", "output": "index=* failure earliest=-2h"}
+{"instruction": "Show me all zeek:software logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:software earliest=-4h"}
+{"instruction": "Search for denied in the last 8h", "input": "", "output": "index=* denied earliest=-8h"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Search for blocked in the last 30d", "input": "", "output": "index=* blocked earliest=-30d"}
+{"instruction": "Show me all zeek:software logs from the last 30d", "input": "", "output": "index=* sourcetype=zeek:software earliest=-30d"}
+{"instruction": "Count zeek:rdp events by status_code", "input": "", "output": "index=* sourcetype=zeek:rdp | stats count by status_code"}
+{"instruction": "Search for suspicious in the last 30d", "input": "", "output": "index=* suspicious earliest=-30d"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show me all zeek:weird logs from the last 4h", "input": "", "output": "index=* sourcetype=zeek:weird earliest=-4h"}
+{"instruction": "Show all udp connections to port 21", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp dest_port=21 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Find hosts communicating with both 10.10.10.25 and 1.1.1.1", "input": "", "output": "index=* (dest_ip=10.10.10.25 OR dest_ip=1.1.1.1) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Get all events from host server-dc01", "input": "", "output": "index=* host=server-dc01"}
+{"instruction": "Find severity=malware in zeek:dhcp logs", "input": "", "output": "index=* sourcetype=zeek:dhcp severity=malware"}
+{"instruction": "Show method values sorted by frequency", "input": "", "output": "index=* | stats count by method | sort -count"}
+{"instruction": "Get statistics of bytes grouped by query", "input": "", "output": "index=* | stats count avg(bytes) max(bytes) min(bytes) by query"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Show zeek:ssh logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-7d"}
+{"instruction": "Find query=cmd.exe in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational query=cmd.exe"}
+{"instruction": "Show me zeek:smtp events where src_port contains cmd.exe", "input": "", "output": "index=* sourcetype=zeek:smtp src_port=*cmd.exe*"}
+{"instruction": "Find failed authentication attempts from 1.1.1.1", "input": "", "output": "index=* authentication=failed src_ip=1.1.1.1 | stats count by user, src_ip"}
+{"instruction": "Find failed authentication attempts from 172.16.5.10", "input": "", "output": "index=* authentication=failed src_ip=172.16.5.10 | stats count by user, src_ip"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show me all zeek:ntlm logs from the last 12h", "input": "", "output": "index=* sourcetype=zeek:ntlm earliest=-12h"}
+{"instruction": "Show zeek:smb events over time in 30m intervals", "input": "", "output": "index=* sourcetype=zeek:smb | timechart span=30m count"}
+{"instruction": "Find failed connection attempts from 10.10.10.25", "input": "", "output": "index=* connection=failed src_ip=10.10.10.25 | stats count by user, src_ip"}
+{"instruction": "Show me all zeek:http logs from the last 24h", "input": "", "output": "index=* sourcetype=zeek:http earliest=-24h"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Find unique signature count by ProcessId", "input": "", "output": "index=* | stats dc(signature) as unique_count by ProcessId"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Show src_port values sorted by frequency", "input": "", "output": "index=* | stats count by src_port | sort -count"}
+{"instruction": "Find User=malware in zeek:rdp logs", "input": "", "output": "index=* sourcetype=zeek:rdp User=malware"}
+{"instruction": "Show me all XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs from the last 1h", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational earliest=-1h"}
+{"instruction": "Get statistics of orig_bytes grouped by answers", "input": "", "output": "index=* | stats count avg(orig_bytes) max(orig_bytes) min(orig_bytes) by answers"}
+{"instruction": "Group zeek:conn events by proto and show percentages", "input": "", "output": "index=* sourcetype=zeek:conn | stats count by proto | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Calculate total resp_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(resp_bytes)"}
+{"instruction": "Find unique service count by severity", "input": "", "output": "index=* | stats dc(service) as unique_count by severity"}
+{"instruction": "Show CommandLine values sorted by frequency", "input": "", "output": "index=* | stats count by CommandLine | sort -count"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Find LogonType=trojan in zeek:x509 logs", "input": "", "output": "index=* sourcetype=zeek:x509 LogonType=trojan"}
+{"instruction": "Display all logs from source IP 1.1.1.1", "input": "", "output": "index=* src_ip=1.1.1.1"}
+{"instruction": "Show bottom 5 service by event count", "input": "", "output": "index=* | rare limit=5 service"}
+{"instruction": "Find events where duration is not null", "input": "", "output": "index=* duration=* | where isnotnull(duration)"}
+{"instruction": "Search for unauthorized in the last 7d", "input": "", "output": "index=* unauthorized earliest=-7d"}
+{"instruction": "Get all events from host email-gateway", "input": "", "output": "index=* host=email-gateway"}
+{"instruction": "Find all events with destination port 389", "input": "", "output": "index=* dest_port=389"}
+{"instruction": "Detect vbs file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.vbs | stats count by src_ip, uri"}
+{"instruction": "Show top 10 signature from zeek:pe", "input": "", "output": "index=* sourcetype=zeek:pe | top limit=10 signature"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Get all events from host web-server", "input": "", "output": "index=* host=web-server"}
+{"instruction": "Find all events with destination port 53", "input": "", "output": "index=* dest_port=53"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Show top 10 severity from zeek:smb", "input": "", "output": "index=* sourcetype=zeek:smb | top limit=10 severity"}
+{"instruction": "Find unique dest_port count by ParentImage", "input": "", "output": "index=* | stats dc(dest_port) as unique_count by ParentImage"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Find network connections from server-dc01", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=server-dc01 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Find rare severity values in zeek:dhcp", "input": "", "output": "index=* sourcetype=zeek:dhcp | rare limit=20 severity"}
+{"instruction": "Find events where src_ip is not null", "input": "", "output": "index=* src_ip=* | where isnotnull(src_ip)"}
+{"instruction": "Show all icmp connections to port 389", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp dest_port=389 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Show suricata logs between 15m ago and now", "input": "", "output": "index=* sourcetype=suricata earliest=-15m"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Calculate average orig_bytes per query", "input": "", "output": "index=* | stats avg(orig_bytes) by query"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find processes created by excel.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*excel.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Display all logs from source IP 1.1.1.1", "input": "", "output": "index=* src_ip=1.1.1.1"}
+{"instruction": "Find answers=malware in suricata logs", "input": "", "output": "index=* sourcetype=suricata answers=malware"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Show zeek:x509 logs between 24h ago and now", "input": "", "output": "index=* sourcetype=zeek:x509 earliest=-24h"}
+{"instruction": "Find unique src_ip count by answers", "input": "", "output": "index=* | stats dc(src_ip) as unique_count by answers"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Calculate average orig_bytes per proto", "input": "", "output": "index=* | stats avg(orig_bytes) by proto"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Show bottom 5 dest_port by event count", "input": "", "output": "index=* | rare limit=5 dest_port"}
+{"instruction": "Find unique proto count by ParentImage", "input": "", "output": "index=* | stats dc(proto) as unique_count by ParentImage"}
+{"instruction": "Get all events from host server-dc01", "input": "", "output": "index=* host=server-dc01"}
+{"instruction": "Find unique ParentImage count by User", "input": "", "output": "index=* | stats dc(ParentImage) as unique_count by User"}
+{"instruction": "Find duration=encoded in zeek:notice logs", "input": "", "output": "index=* sourcetype=zeek:notice duration=encoded"}
+{"instruction": "Find rare query values in suricata", "input": "", "output": "index=* sourcetype=suricata | rare limit=20 query"}
+{"instruction": "Show all icmp connections to port 8080", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp dest_port=8080 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Count zeek:ssh events by src_port", "input": "", "output": "index=* sourcetype=zeek:ssh | stats count by src_port"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Find rare TargetUserName values in zeek:weird", "input": "", "output": "index=* sourcetype=zeek:weird | rare limit=20 TargetUserName"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Find uri=service in zeek:weird logs", "input": "", "output": "index=* sourcetype=zeek:weird uri=service"}
+{"instruction": "Get all events from host email-gateway", "input": "", "output": "index=* host=email-gateway"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 1h", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-1h"}
+{"instruction": "Find failed authentication attempts from 10.0.0.50", "input": "", "output": "index=* authentication=failed src_ip=10.0.0.50 | stats count by user, src_ip"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Get all events from host server-dc01", "input": "", "output": "index=* host=server-dc01"}
+{"instruction": "Show me zeek:software events where proto contains cmd.exe", "input": "", "output": "index=* sourcetype=zeek:software proto=*cmd.exe*"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Get all events from host workstation-02", "input": "", "output": "index=* host=workstation-02"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*malicious.com*) | table _time, src_ip, query, answers"}
+{"instruction": "Find network connections from db-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=db-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Show me suricata events where action contains suspicious", "input": "", "output": "index=* sourcetype=suricata action=*suspicious*"}
+{"instruction": "Find all events with destination port 443", "input": "", "output": "index=* dest_port=443"}
+{"instruction": "Get all events from host proxy-01", "input": "", "output": "index=* host=proxy-01"}
+{"instruction": "Identify zeek:kerberos anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:kerberos | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show bottom 5 EventCode by event count", "input": "", "output": "index=* | rare limit=5 EventCode"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Get all events from host workstation-02", "input": "", "output": "index=* host=workstation-02"}
+{"instruction": "Find hosts communicating with both 192.168.1.50 and 10.0.5.20", "input": "", "output": "index=* (dest_ip=192.168.1.50 OR dest_ip=10.0.5.20) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Find network connections from win10-client", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=win10-client | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Display all logs from source IP 8.8.8.8", "input": "", "output": "index=* src_ip=8.8.8.8"}
+{"instruction": "Find network connections from workstation-02", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=workstation-02 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Find events where Image is not null", "input": "", "output": "index=* Image=* | where isnotnull(Image)"}
+{"instruction": "Find failed connection attempts from 8.8.8.8", "input": "", "output": "index=* connection=failed src_ip=8.8.8.8 | stats count by user, src_ip"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show me zeek:smb events where Computer contains system", "input": "", "output": "index=* sourcetype=zeek:smb Computer=*system*"}
+{"instruction": "Show answers values sorted by frequency", "input": "", "output": "index=* | stats count by answers | sort -count"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Detect hta file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.hta | stats count by src_ip, uri"}
+{"instruction": "Count XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events by dest_port", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | stats count by dest_port"}
+{"instruction": "Show Computer values sorted by frequency", "input": "", "output": "index=* | stats count by Computer | sort -count"}
+{"instruction": "Show me all zeek:files logs from the last 30m", "input": "", "output": "index=* sourcetype=zeek:files earliest=-30m"}
+{"instruction": "Find rare dest_port values in zeek:dhcp", "input": "", "output": "index=* sourcetype=zeek:dhcp | rare limit=20 dest_port"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Display all logs from source IP 192.168.100.5", "input": "", "output": "index=* src_ip=192.168.100.5"}
+{"instruction": "Calculate total duration per hour", "input": "", "output": "index=* | timechart span=1h sum(duration)"}
+{"instruction": "Find all events with destination port 389", "input": "", "output": "index=* dest_port=389"}
+{"instruction": "Show me all zeek:x509 logs from the last 30d", "input": "", "output": "index=* sourcetype=zeek:x509 earliest=-30d"}
+{"instruction": "Group zeek:files events by status_code and show percentages", "input": "", "output": "index=* sourcetype=zeek:files | stats count by status_code | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Detect bat file downloads", "input": "", "output": "index=* sourcetype=zeek:http uri=*.bat | stats count by src_ip, uri"}
+{"instruction": "Show ProcessId values sorted by frequency", "input": "", "output": "index=* | stats count by ProcessId | sort -count"}
+{"instruction": "Identify zeek:notice anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:notice | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show me all zeek:software logs from the last 15m", "input": "", "output": "index=* sourcetype=zeek:software earliest=-15m"}
+{"instruction": "Show bottom 5 dest_ip by event count", "input": "", "output": "index=* | rare limit=5 dest_ip"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Calculate average packets per uri", "input": "", "output": "index=* | stats avg(packets) by uri"}
+{"instruction": "Find rare dest_ip values in zeek:dns", "input": "", "output": "index=* sourcetype=zeek:dns | rare limit=20 dest_ip"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Group zeek:pe events by action and show percentages", "input": "", "output": "index=* sourcetype=zeek:pe | stats count by action | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Get all events from host email-gateway", "input": "", "output": "index=* host=email-gateway"}
+{"instruction": "Group zeek:http events by user and show percentages", "input": "", "output": "index=* sourcetype=zeek:http | stats count by user | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show bottom 5 user by event count", "input": "", "output": "index=* | rare limit=5 user"}
+{"instruction": "Find failed login attempts from 8.8.8.8", "input": "", "output": "index=* login=failed src_ip=8.8.8.8 | stats count by user, src_ip"}
+{"instruction": "Show top 10 user from zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | top limit=10 user"}
+{"instruction": "Count zeek:ntlm events by ProcessId", "input": "", "output": "index=* sourcetype=zeek:ntlm | stats count by ProcessId"}
+{"instruction": "Get statistics of packets grouped by service", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by service"}
+{"instruction": "Find all events with destination port 23", "input": "", "output": "index=* dest_port=23"}
+{"instruction": "Count XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events by ParentImage", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | stats count by ParentImage"}
+{"instruction": "Search for suspicious in the last 7d", "input": "", "output": "index=* suspicious earliest=-7d"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find failed connection attempts from 10.0.0.50", "input": "", "output": "index=* connection=failed src_ip=10.0.0.50 | stats count by user, src_ip"}
+{"instruction": "Find hosts communicating with both 10.0.0.50 and 172.16.5.10", "input": "", "output": "index=* (dest_ip=10.0.0.50 OR dest_ip=172.16.5.10) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Calculate average orig_bytes per CommandLine", "input": "", "output": "index=* | stats avg(orig_bytes) by CommandLine"}
+{"instruction": "Find failed authentication attempts from 10.0.5.20", "input": "", "output": "index=* authentication=failed src_ip=10.0.5.20 | stats count by user, src_ip"}
+{"instruction": "Find all events with destination port 3306", "input": "", "output": "index=* dest_port=3306"}
+{"instruction": "Show zeek:kerberos logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:kerberos earliest=-7d"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Group suricata events by CommandLine and show percentages", "input": "", "output": "index=* sourcetype=suricata | stats count by CommandLine | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Search for failure in the last 30d", "input": "", "output": "index=* failure earliest=-30d"}
+{"instruction": "Display all logs from source IP 192.168.100.5", "input": "", "output": "index=* src_ip=192.168.100.5"}
+{"instruction": "Show suricata events over time in 5m intervals", "input": "", "output": "index=* sourcetype=suricata | timechart span=5m count"}
+{"instruction": "Show bottom 5 dest_port by event count", "input": "", "output": "index=* | rare limit=5 dest_port"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Find all events with destination port 25", "input": "", "output": "index=* dest_port=25"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Show zeek:ssl events over time in 1m intervals", "input": "", "output": "index=* sourcetype=zeek:ssl | timechart span=1m count"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Calculate average bytes per status_code", "input": "", "output": "index=* | stats avg(bytes) by status_code"}
+{"instruction": "Group zeek:http events by severity and show percentages", "input": "", "output": "index=* sourcetype=zeek:http | stats count by severity | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Search for failed in the last 4h", "input": "", "output": "index=* failed earliest=-4h"}
+{"instruction": "Show top 10 service from zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | top limit=10 service"}
+{"instruction": "Show me zeek:smb events where Computer contains suspicious", "input": "", "output": "index=* sourcetype=zeek:smb Computer=*suspicious*"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Show zeek:notice events over time in 30m intervals", "input": "", "output": "index=* sourcetype=zeek:notice | timechart span=30m count"}
+{"instruction": "Count zeek:ssh events by action", "input": "", "output": "index=* sourcetype=zeek:ssh | stats count by action"}
+{"instruction": "Show zeek:dce_rpc logs between 7d ago and now", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-7d"}
+{"instruction": "Find processes created by winword.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*winword.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Search for suspicious in the last 15m", "input": "", "output": "index=* suspicious earliest=-15m"}
+{"instruction": "Find User=suspicious in zeek:rdp logs", "input": "", "output": "index=* sourcetype=zeek:rdp User=suspicious"}
+{"instruction": "Find hosts communicating with both 10.0.5.20 and 192.168.100.5", "input": "", "output": "index=* (dest_ip=10.0.5.20 OR dest_ip=192.168.100.5) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Find processes created by explorer.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*explorer.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Display all logs from source IP 8.8.8.8", "input": "", "output": "index=* src_ip=8.8.8.8"}
+{"instruction": "Find action=encoded in zeek:software logs", "input": "", "output": "index=* sourcetype=zeek:software action=encoded"}
+{"instruction": "Count zeek:ssl events by severity", "input": "", "output": "index=* sourcetype=zeek:ssl | stats count by severity"}
+{"instruction": "Get all events from host web-server", "input": "", "output": "index=* host=web-server"}
+{"instruction": "Show me zeek:ssh events where Computer contains cmd.exe", "input": "", "output": "index=* sourcetype=zeek:ssh Computer=*cmd.exe*"}
+{"instruction": "Show top 10 uri from zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | top limit=10 uri"}
+{"instruction": "Show zeek:ssh events over time in 1m intervals", "input": "", "output": "index=* sourcetype=zeek:ssh | timechart span=1m count"}
+{"instruction": "Show me zeek:ssh events where Computer contains service", "input": "", "output": "index=* sourcetype=zeek:ssh Computer=*service*"}
+{"instruction": "Count zeek:ssh events by duration", "input": "", "output": "index=* sourcetype=zeek:ssh | stats count by duration"}
+{"instruction": "Find events where service is not null", "input": "", "output": "index=* service=* | where isnotnull(service)"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Search for malware in the last 30m", "input": "", "output": "index=* malware earliest=-30m"}
+{"instruction": "Search for failure in the last 30d", "input": "", "output": "index=* failure earliest=-30d"}
+{"instruction": "Find ParentImage=cmd.exe in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational ParentImage=cmd.exe"}
+{"instruction": "Get all events from host proxy-01", "input": "", "output": "index=* host=proxy-01"}
+{"instruction": "Find hosts communicating with both 192.168.1.100 and 192.168.100.5", "input": "", "output": "index=* (dest_ip=192.168.1.100 OR dest_ip=192.168.100.5) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Show zeek:pe events over time in 1h intervals", "input": "", "output": "index=* sourcetype=zeek:pe | timechart span=1h count"}
+{"instruction": "Find TargetUserName=trojan in zeek:smb logs", "input": "", "output": "index=* sourcetype=zeek:smb TargetUserName=trojan"}
+{"instruction": "Show user values sorted by frequency", "input": "", "output": "index=* | stats count by user | sort -count"}
+{"instruction": "Show zeek:smtp events over time in 10m intervals", "input": "", "output": "index=* sourcetype=zeek:smtp | timechart span=10m count"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Find processes created by services.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*services.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Get all events from host workstation-01", "input": "", "output": "index=* host=workstation-01"}
+{"instruction": "Group zeek:ntlm events by Image and show percentages", "input": "", "output": "index=* sourcetype=zeek:ntlm | stats count by Image | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find service=suspicious in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational service=suspicious"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Show me all zeek:dce_rpc logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-1h"}
+{"instruction": "Show me all zeek:conn logs from the last 12h", "input": "", "output": "index=* sourcetype=zeek:conn earliest=-12h"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Show zeek:x509 logs between 12h ago and now", "input": "", "output": "index=* sourcetype=zeek:x509 earliest=-12h"}
+{"instruction": "Detect potential brute force against email-gateway", "input": "", "output": "index=* dest=email-gateway action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Find processes created by excel.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*excel.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Detect potential brute force against db-server", "input": "", "output": "index=* dest=db-server action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Show query values sorted by frequency", "input": "", "output": "index=* | stats count by query | sort -count"}
+{"instruction": "Display all logs from source IP 8.8.8.8", "input": "", "output": "index=* src_ip=8.8.8.8"}
+{"instruction": "Detect potential brute force against proxy-01", "input": "", "output": "index=* dest=proxy-01 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Identify zeek:pe anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:pe | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Identify zeek:smb anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:smb | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Find all events with destination port 80", "input": "", "output": "index=* dest_port=80"}
+{"instruction": "Get all events from host workstation-01", "input": "", "output": "index=* host=workstation-01"}
+{"instruction": "Find all events with destination port 25", "input": "", "output": "index=* dest_port=25"}
+{"instruction": "Identify zeek:dhcp anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:dhcp | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Get all events from host proxy-01", "input": "", "output": "index=* host=proxy-01"}
+{"instruction": "Find events where Image is not null", "input": "", "output": "index=* Image=* | where isnotnull(Image)"}
+{"instruction": "Show bottom 5 LogonType by event count", "input": "", "output": "index=* | rare limit=5 LogonType"}
+{"instruction": "Show me all zeek:notice logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:notice earliest=-2h"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show bottom 5 query by event count", "input": "", "output": "index=* | rare limit=5 query"}
+{"instruction": "Show me all zeek:ssh logs from the last 15m", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-15m"}
+{"instruction": "Show bottom 5 ParentImage by event count", "input": "", "output": "index=* | rare limit=5 ParentImage"}
+{"instruction": "Show me zeek:dce_rpc events where Image contains powershell.exe", "input": "", "output": "index=* sourcetype=zeek:dce_rpc Image=*powershell.exe*"}
+{"instruction": "Show me all zeek:pe logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:pe earliest=-1h"}
+{"instruction": "Find hosts communicating with both 10.10.10.25 and 8.8.8.8", "input": "", "output": "index=* (dest_ip=10.10.10.25 OR dest_ip=8.8.8.8) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Show zeek:dhcp events over time in 1m intervals", "input": "", "output": "index=* sourcetype=zeek:dhcp | timechart span=1m count"}
+{"instruction": "Show all udp connections to port 80", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp dest_port=80 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Show TargetUserName values sorted by frequency", "input": "", "output": "index=* | stats count by TargetUserName | sort -count"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Count XmlWinEventLog:Security events by bytes", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security | stats count by bytes"}
+{"instruction": "Show top 10 src_ip from zeek:software", "input": "", "output": "index=* sourcetype=zeek:software | top limit=10 src_ip"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Find unique Image count by dest_port", "input": "", "output": "index=* | stats dc(Image) as unique_count by dest_port"}
+{"instruction": "Find all events with destination port 21", "input": "", "output": "index=* dest_port=21"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Show me zeek:dhcp events where proto contains administrator", "input": "", "output": "index=* sourcetype=zeek:dhcp proto=*administrator*"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Detect data exfiltration by identifying large icmp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show top 10 src_port from zeek:http", "input": "", "output": "index=* sourcetype=zeek:http | top limit=10 src_port"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Count zeek:smtp events by host", "input": "", "output": "index=* sourcetype=zeek:smtp | stats count by host"}
+{"instruction": "Show ParentImage values sorted by frequency", "input": "", "output": "index=* | stats count by ParentImage | sort -count"}
+{"instruction": "Show zeek:files logs between 12h ago and now", "input": "", "output": "index=* sourcetype=zeek:files earliest=-12h"}
+{"instruction": "Get all icmp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=icmp"}
+{"instruction": "Find events where Computer is not null", "input": "", "output": "index=* Computer=* | where isnotnull(Computer)"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Search for warning in the last 2h", "input": "", "output": "index=* warning earliest=-2h"}
+{"instruction": "Find all events with destination port 8080", "input": "", "output": "index=* dest_port=8080"}
+{"instruction": "Calculate average orig_bytes per query", "input": "", "output": "index=* | stats avg(orig_bytes) by query"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Show me zeek:files events where LogonType contains admin", "input": "", "output": "index=* sourcetype=zeek:files LogonType=*admin*"}
+{"instruction": "Show top 10 action from zeek:ssl", "input": "", "output": "index=* sourcetype=zeek:ssl | top limit=10 action"}
+{"instruction": "Display all logs from source IP 8.8.8.8", "input": "", "output": "index=* src_ip=8.8.8.8"}
+{"instruction": "Show src_port values sorted by frequency", "input": "", "output": "index=* | stats count by src_port | sort -count"}
+{"instruction": "Show me all zeek:weird logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:weird earliest=-1h"}
+{"instruction": "Detect potential brute force against workstation-02", "input": "", "output": "index=* dest=workstation-02 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Show me all XmlWinEventLog:Security logs from the last 7d", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Security earliest=-7d"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Calculate average resp_bytes per proto", "input": "", "output": "index=* | stats avg(resp_bytes) by proto"}
+{"instruction": "Count zeek:smtp events by User", "input": "", "output": "index=* sourcetype=zeek:smtp | stats count by User"}
+{"instruction": "Find host=encoded in zeek:ssh logs", "input": "", "output": "index=* sourcetype=zeek:ssh host=encoded"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Group zeek:pe events by dest_ip and show percentages", "input": "", "output": "index=* sourcetype=zeek:pe | stats count by dest_ip | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show bottom 5 uri by event count", "input": "", "output": "index=* | rare limit=5 uri"}
+{"instruction": "Find LogonType=malware in zeek:ntlm logs", "input": "", "output": "index=* sourcetype=zeek:ntlm LogonType=malware"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show bottom 5 dest_port by event count", "input": "", "output": "index=* | rare limit=5 dest_port"}
+{"instruction": "Show me all zeek:ssl logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:ssl earliest=-1h"}
+{"instruction": "Search for suspicious in the last 30d", "input": "", "output": "index=* suspicious earliest=-30d"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Get all udp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Search for failure in the last 15m", "input": "", "output": "index=* failure earliest=-15m"}
+{"instruction": "Count zeek:http events by src_port", "input": "", "output": "index=* sourcetype=zeek:http | stats count by src_port"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show failed Windows authentication attempts", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4625 | stats count by src_ip, TargetUserName"}
+{"instruction": "Show zeek:dce_rpc logs between 30d ago and now", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-30d"}
+{"instruction": "Search for failed in the last 30d", "input": "", "output": "index=* failed earliest=-30d"}
+{"instruction": "Show me all zeek:ntlm logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:ntlm earliest=-1h"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Search for warning in the last 1h", "input": "", "output": "index=* warning earliest=-1h"}
+{"instruction": "Find all events with destination port 25", "input": "", "output": "index=* dest_port=25"}
+{"instruction": "Get all events from host db-server", "input": "", "output": "index=* host=db-server"}
+{"instruction": "Display all logs from source IP 192.168.1.50", "input": "", "output": "index=* src_ip=192.168.1.50"}
+{"instruction": "Find events where action is not null", "input": "", "output": "index=* action=* | where isnotnull(action)"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Group zeek:software events by TargetUserName and show percentages", "input": "", "output": "index=* sourcetype=zeek:software | stats count by TargetUserName | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Show me zeek:kerberos events where user contains malware", "input": "", "output": "index=* sourcetype=zeek:kerberos user=*malware*"}
+{"instruction": "Identify zeek:notice anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:notice | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Calculate average duration per Computer", "input": "", "output": "index=* | stats avg(duration) by Computer"}
+{"instruction": "Find rare src_ip values in suricata", "input": "", "output": "index=* sourcetype=suricata | rare limit=20 src_ip"}
+{"instruction": "Find network connections from workstation-02", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=workstation-02 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Show answers values sorted by frequency", "input": "", "output": "index=* | stats count by answers | sort -count"}
+{"instruction": "Group zeek:kerberos events by host and show percentages", "input": "", "output": "index=* sourcetype=zeek:kerberos | stats count by host | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find failed login attempts from 1.1.1.1", "input": "", "output": "index=* login=failed src_ip=1.1.1.1 | stats count by user, src_ip"}
+{"instruction": "Show all tcp connections to port 139", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp dest_port=139 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Show Image values sorted by frequency", "input": "", "output": "index=* | stats count by Image | sort -count"}
+{"instruction": "Find all events with destination port 23", "input": "", "output": "index=* dest_port=23"}
+{"instruction": "Find events where EventCode is not null", "input": "", "output": "index=* EventCode=* | where isnotnull(EventCode)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Find signature=malware in zeek:ssh logs", "input": "", "output": "index=* sourcetype=zeek:ssh signature=malware"}
+{"instruction": "Show top 10 Computer from zeek:ssh", "input": "", "output": "index=* sourcetype=zeek:ssh | top limit=10 Computer"}
+{"instruction": "Find network connections from db-server", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=db-server | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Count zeek:pe events by query", "input": "", "output": "index=* sourcetype=zeek:pe | stats count by query"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Show zeek:notice logs between 24h ago and now", "input": "", "output": "index=* sourcetype=zeek:notice earliest=-24h"}
+{"instruction": "Show top 10 dest_ip from zeek:dce_rpc", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | top limit=10 dest_ip"}
+{"instruction": "Find answers=suspicious in zeek:dce_rpc logs", "input": "", "output": "index=* sourcetype=zeek:dce_rpc answers=suspicious"}
+{"instruction": "Show bottom 5 User by event count", "input": "", "output": "index=* | rare limit=5 User"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show zeek:ssl logs between 24h ago and now", "input": "", "output": "index=* sourcetype=zeek:ssl earliest=-24h"}
+{"instruction": "Find processes created by lsass.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*lsass.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Group XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events by method and show percentages", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | stats count by method | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*evil.net*) | table _time, src_ip, query, answers"}
+{"instruction": "Display all logs from source IP 1.1.1.1", "input": "", "output": "index=* src_ip=1.1.1.1"}
+{"instruction": "Show query values sorted by frequency", "input": "", "output": "index=* | stats count by query | sort -count"}
+{"instruction": "Show me all zeek:ssl logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:ssl earliest=-2h"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*malicious.com*) | table _time, src_ip, query, answers"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Show me zeek:files events where LogonType contains service", "input": "", "output": "index=* sourcetype=zeek:files LogonType=*service*"}
+{"instruction": "Show top 10 ParentImage from zeek:smtp", "input": "", "output": "index=* sourcetype=zeek:smtp | top limit=10 ParentImage"}
+{"instruction": "Calculate total orig_bytes per hour", "input": "", "output": "index=* | timechart span=1h sum(orig_bytes)"}
+{"instruction": "Show all udp connections to port 22", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp dest_port=22 | table _time, src_ip, dest_ip, bytes"}
+{"instruction": "Find DNS queries to suspicious domains", "input": "", "output": "index=* sourcetype=zeek:dns query IN (*c2server.xyz*) | table _time, src_ip, query, answers"}
+{"instruction": "Show zeek:conn events over time in 10m intervals", "input": "", "output": "index=* sourcetype=zeek:conn | timechart span=10m count"}
+{"instruction": "Show proto values sorted by frequency", "input": "", "output": "index=* | stats count by proto | sort -count"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Find ParentImage=trojan in zeek:pe logs", "input": "", "output": "index=* sourcetype=zeek:pe ParentImage=trojan"}
+{"instruction": "Display all logs from source IP 192.168.100.5", "input": "", "output": "index=* src_ip=192.168.100.5"}
+{"instruction": "Search for denied in the last 1h", "input": "", "output": "index=* denied earliest=-1h"}
+{"instruction": "Identify zeek:dns anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:dns | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show me all suricata logs from the last 12h", "input": "", "output": "index=* sourcetype=suricata earliest=-12h"}
+{"instruction": "Show Computer values sorted by frequency", "input": "", "output": "index=* | stats count by Computer | sort -count"}
+{"instruction": "Show me zeek:notice events where Image contains admin", "input": "", "output": "index=* sourcetype=zeek:notice Image=*admin*"}
+{"instruction": "Show top 10 service from zeek:smb", "input": "", "output": "index=* sourcetype=zeek:smb | top limit=10 service"}
+{"instruction": "Calculate total packets per hour", "input": "", "output": "index=* | timechart span=1h sum(packets)"}
+{"instruction": "Find events where ProcessId is not null", "input": "", "output": "index=* ProcessId=* | where isnotnull(ProcessId)"}
+{"instruction": "Get all events from host ubuntu-server", "input": "", "output": "index=* host=ubuntu-server"}
+{"instruction": "Show top 10 ParentImage from zeek:conn", "input": "", "output": "index=* sourcetype=zeek:conn | top limit=10 ParentImage"}
+{"instruction": "Show me zeek:x509 events where method contains suspicious", "input": "", "output": "index=* sourcetype=zeek:x509 method=*suspicious*"}
+{"instruction": "Find all events with destination port 389", "input": "", "output": "index=* dest_port=389"}
+{"instruction": "Find unique bytes count by ProcessId", "input": "", "output": "index=* | stats dc(bytes) as unique_count by ProcessId"}
+{"instruction": "Find answers=cmd.exe in zeek:software logs", "input": "", "output": "index=* sourcetype=zeek:software answers=cmd.exe"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Find action=administrator in XmlWinEventLog:Microsoft-Windows-Sysmon/Operational logs", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational action=administrator"}
+{"instruction": "Search for error in the last 12h", "input": "", "output": "index=* error earliest=-12h"}
+{"instruction": "Find all events with destination port 3306", "input": "", "output": "index=* dest_port=3306"}
+{"instruction": "Identify zeek:files anomalies using standard deviation", "input": "", "output": "index=* sourcetype=zeek:files | timechart span=1h count | eventstats avg(count) as avg, stdev(count) as stdev | eval threshold=avg+(stdev*2) | where count > threshold"}
+{"instruction": "Show bottom 5 dest_ip by event count", "input": "", "output": "index=* | rare limit=5 dest_ip"}
+{"instruction": "Search for malware in the last 1h", "input": "", "output": "index=* malware earliest=-1h"}
+{"instruction": "Detect data exfiltration by identifying large tcp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Find all events with destination port 21", "input": "", "output": "index=* dest_port=21"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Detect potential brute force against ubuntu-server", "input": "", "output": "index=* dest=ubuntu-server action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Find hosts communicating with both 192.168.1.100 and 172.16.5.10", "input": "", "output": "index=* (dest_ip=192.168.1.100 OR dest_ip=172.16.5.10) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Get all events from host ubuntu-server", "input": "", "output": "index=* host=ubuntu-server"}
+{"instruction": "Find network connections from proxy-01", "input": "", "output": "index=* sourcetype=zeek:conn id.orig_h=proxy-01 | table _time, id.resp_h, id.resp_p, bytes"}
+{"instruction": "Count XmlWinEventLog:Microsoft-Windows-Sysmon/Operational events by dest_port", "input": "", "output": "index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational | stats count by dest_port"}
+{"instruction": "Display all logs from source IP 172.16.5.10", "input": "", "output": "index=* src_ip=172.16.5.10"}
+{"instruction": "Detect lateral movement using Sysmon and authentication logs", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Security\" EventCode=4624 LogonType=3) OR (index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=3) | transaction src_ip dest_ip maxspan=5m | where eventcount > 5"}
+{"instruction": "Find all events with destination port 25", "input": "", "output": "index=* dest_port=25"}
+{"instruction": "Find unique answers count by host", "input": "", "output": "index=* | stats dc(answers) as unique_count by host"}
+{"instruction": "Find events where signature is not null", "input": "", "output": "index=* signature=* | where isnotnull(signature)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Calculate average orig_bytes per uri", "input": "", "output": "index=* | stats avg(orig_bytes) by uri"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Correlate Sysmon process creation with network connections from the same host", "input": "", "output": "(index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1) OR (index=* sourcetype=zeek:conn) | stats values(Image) as processes, values(dest_ip) as connections by Computer | where isnotnull(processes) AND isnotnull(connections)"}
+{"instruction": "Show me all zeek:http logs from the last 24h", "input": "", "output": "index=* sourcetype=zeek:http earliest=-24h"}
+{"instruction": "Display all logs from source IP 10.10.10.25", "input": "", "output": "index=* src_ip=10.10.10.25"}
+{"instruction": "Show signature values sorted by frequency", "input": "", "output": "index=* | stats count by signature | sort -count"}
+{"instruction": "Find processes created by winword.exe", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 ParentImage=*winword.exe* | table _time, Computer, Image, CommandLine"}
+{"instruction": "Show me all zeek:ssh logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:ssh earliest=-2h"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show top 10 proto from zeek:ssh", "input": "", "output": "index=* sourcetype=zeek:ssh | top limit=10 proto"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Detect potential brute force against workstation-01", "input": "", "output": "index=* dest=workstation-01 action=failure | stats count by src_ip, user | where count > 5"}
+{"instruction": "Find processes with suspicious parent-child relationships", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 | eval suspicious=if(match(ParentImage, \"(winword|excel|powerpnt)\\\\.exe\") AND match(Image, \"(powershell|cmd|wscript)\\\\.exe\"), 1, 0) | where suspicious=1"}
+{"instruction": "Group zeek:ntlm events by dest_port and show percentages", "input": "", "output": "index=* sourcetype=zeek:ntlm | stats count by dest_port | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Find hosts communicating with both 10.0.5.20 and 172.16.5.10", "input": "", "output": "index=* (dest_ip=10.0.5.20 OR dest_ip=172.16.5.10) | stats dc(dest_ip) as unique_dests values(dest_ip) by src_ip | where unique_dests=2"}
+{"instruction": "Show bottom 5 src_port by event count", "input": "", "output": "index=* | rare limit=5 src_port"}
+{"instruction": "Find unique bytes count by severity", "input": "", "output": "index=* | stats dc(bytes) as unique_count by severity"}
+{"instruction": "Show SSL certificate anomalies", "input": "", "output": "index=* sourcetype=zeek:ssl validation_status!=ok | table _time, src_ip, server_name, validation_status"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show me zeek:ssh events where EventCode contains trojan", "input": "", "output": "index=* sourcetype=zeek:ssh EventCode=*trojan*"}
+{"instruction": "Calculate average duration per TargetUserName", "input": "", "output": "index=* | stats avg(duration) by TargetUserName"}
+{"instruction": "Group zeek:pe events by method and show percentages", "input": "", "output": "index=* sourcetype=zeek:pe | stats count by method | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Detect data exfiltration by identifying large udp transfers", "input": "", "output": "index=* sourcetype=zeek:conn proto=udp | stats sum(bytes) as total_bytes by src_ip, dest_ip | where total_bytes > 100000000 | sort -total_bytes"}
+{"instruction": "Show me all zeek:smtp logs from the last 8h", "input": "", "output": "index=* sourcetype=zeek:smtp earliest=-8h"}
+{"instruction": "Get all events from host win10-client", "input": "", "output": "index=* host=win10-client"}
+{"instruction": "Show top 10 bytes from zeek:dce_rpc", "input": "", "output": "index=* sourcetype=zeek:dce_rpc | top limit=10 bytes"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Show zeek:conn logs between 30d ago and now", "input": "", "output": "index=* sourcetype=zeek:conn earliest=-30d"}
+{"instruction": "Show me all zeek:ntlm logs from the last 2h", "input": "", "output": "index=* sourcetype=zeek:ntlm earliest=-2h"}
+{"instruction": "Display all logs from source IP 192.168.1.100", "input": "", "output": "index=* src_ip=192.168.1.100"}
+{"instruction": "Identify DNS tunneling attempts", "input": "", "output": "index=* sourcetype=zeek:dns | eval query_length=len(query) | where query_length > 50 | stats count avg(query_length) by src_ip, query | where count > 10"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Show me zeek:http events where user contains service", "input": "", "output": "index=* sourcetype=zeek:http user=*service*"}
+{"instruction": "Get statistics of packets grouped by Image", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by Image"}
+{"instruction": "Get all tcp traffic logs", "input": "", "output": "index=* sourcetype=zeek:conn proto=tcp"}
+{"instruction": "Detect port scanning activity", "input": "", "output": "index=* sourcetype=zeek:conn | stats dc(dest_port) as unique_ports, values(dest_port) as ports by src_ip, dest_ip | where unique_ports > 20"}
+{"instruction": "Detect PowerShell execution events", "input": "", "output": "index=* sourcetype=\"XmlWinEventLog:Microsoft-Windows-Sysmon/Operational\" EventCode=1 Image=*powershell.exe* | table _time, Computer, CommandLine"}
+{"instruction": "Group zeek:notice events by service and show percentages", "input": "", "output": "index=* sourcetype=zeek:notice | stats count by service | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}
+{"instruction": "Find unique action count by host", "input": "", "output": "index=* | stats dc(action) as unique_count by host"}
+{"instruction": "Find beaconing behavior in network connections", "input": "", "output": "index=* sourcetype=zeek:conn | bin _time span=1h | stats count by _time, src_ip, dest_ip | eventstats avg(count) as avg_count by src_ip, dest_ip | where count > (avg_count * 0.8) AND count < (avg_count * 1.2)"}
+{"instruction": "Show top 10 user from zeek:conn", "input": "", "output": "index=* sourcetype=zeek:conn | top limit=10 user"}
+{"instruction": "Find all events with destination port 80", "input": "", "output": "index=* dest_port=80"}
+{"instruction": "Show me all zeek:dce_rpc logs from the last 1h", "input": "", "output": "index=* sourcetype=zeek:dce_rpc earliest=-1h"}
+{"instruction": "Find all events with destination port 139", "input": "", "output": "index=* dest_port=139"}
+{"instruction": "Get all events from host db-server", "input": "", "output": "index=* host=db-server"}
+{"instruction": "Get statistics of packets grouped by ParentImage", "input": "", "output": "index=* | stats count avg(packets) max(packets) min(packets) by ParentImage"}
+{"instruction": "Group zeek:x509 events by signature and show percentages", "input": "", "output": "index=* sourcetype=zeek:x509 | stats count by signature | eventstats sum(count) as total | eval percentage=round((count/total)*100,2)"}

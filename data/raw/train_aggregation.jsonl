@@ -1,0 +1,20 @@
+{"instruction": "Count failed login attempts by user", "input": "", "output": "index=* (failed OR failure) (login OR authentication) | stats count by user | sort -count"}
+{"instruction": "Show top 10 source IPs by event count", "input": "", "output": "index=* | stats count by src_ip | sort -count | head 10"}
+{"instruction": "Create a timechart of network traffic by hour", "input": "", "output": "index=network | timechart span=1h sum(bytes) as total_bytes"}
+{"instruction": "Calculate average response time for web requests", "input": "", "output": "index=web | stats avg(response_time) as avg_response_time by uri"}
+{"instruction": "Count unique users per day for the last 30 days", "input": "", "output": "index=* user=* earliest=-30d | bucket _time span=1d | stats dc(user) as unique_users by _time"}
+{"instruction": "Show distribution of HTTP status codes", "input": "", "output": "index=web | stats count by status | eval percentage=round(count/sum(count)*100, 2)"}
+{"instruction": "Find top talkers by bandwidth usage", "input": "", "output": "index=network | stats sum(bytes_in) as total_in, sum(bytes_out) as total_out by src_ip | eval total_bytes=total_in+total_out | sort -total_bytes | head 20"}
+{"instruction": "Calculate login success vs failure ratio by user", "input": "", "output": "index=* (login OR authentication) | stats count(eval(action=\"success\")) as successful, count(eval(action=\"failure\" OR action=\"failed\")) as failed by user | eval success_rate=round(successful/(successful+failed)*100, 2)"}
+{"instruction": "Show trend of security events over the last 24 hours", "input": "", "output": "index=security earliest=-24h | timechart span=1h count by severity"}
+{"instruction": "Identify most common destination ports", "input": "", "output": "index=network | stats count by dest_port | sort -count | head 15"}
+{"instruction": "Calculate 95th percentile of query response times", "input": "", "output": "index=database | stats perc95(query_time) as p95_response_time by database_name"}
+{"instruction": "Show events grouped by hour of day and day of week", "input": "", "output": "index=* | eval hour=strftime(_time, \"%H\") | eval day=strftime(_time, \"%A\") | stats count by hour, day"}
+{"instruction": "Count events by sourcetype with percentage", "input": "", "output": "index=* | stats count by sourcetype | eventstats sum(count) as total | eval percentage=round(count/total*100, 2) | sort -count"}
+{"instruction": "Find users with most failed and successful logins", "input": "", "output": "index=* (login OR authentication) | stats count(eval(match(action, \"(?i)fail\"))) as failures, count(eval(match(action, \"(?i)success\"))) as successes by user | eval total=failures+successes | sort -total"}
+{"instruction": "Calculate average events per second for each index", "input": "Time range: last hour", "output": "earliest=-1h | stats count by index | eval eps=round(count/3600, 2) | sort -eps"}
+{"instruction": "Show distribution of email senders", "input": "", "output": "index=email | stats count by sender | sort -count | head 50"}
+{"instruction": "Analyze authentication patterns by location", "input": "", "output": "index=* authentication | iplocation src_ip | stats count by Country, City | sort -count"}
+{"instruction": "Calculate baseline for normal user behavior", "input": "", "output": "index=* earliest=-30d latest=-1d | bucket _time span=1d | stats count dc(src_ip) as unique_ips sum(bytes_out) as total_bytes by user, _time | stats avg(count) as avg_events, avg(unique_ips) as avg_ips, avg(total_bytes) as avg_bytes by user"}
+{"instruction": "Show concurrent user sessions over time", "input": "", "output": "index=* (action=login OR action=logout) | transaction user startswith=eval(action=\"login\") endswith=eval(action=\"logout\") | timechart span=15m count"}
+{"instruction": "Find top file types being downloaded", "input": "", "output": "index=proxy OR index=web | rex field=uri \"\\.(?<file_extension>\\w+)$\" | stats count by file_extension | sort -count | head 10"}

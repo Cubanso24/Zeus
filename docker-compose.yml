@@ -31,7 +31,8 @@ services:
       - HF_HOME=/app/.cache/huggingface
     volumes:
       - ./data/feedback:/app/data/feedback
-      - ./models:/app/models:ro
+      - ./models:/app/models  # Read-write for saving fine-tuned models
+      - ./logs:/app/logs  # Persistent training logs
       - ${HOME}/.cache/huggingface:/app/.cache/huggingface
     depends_on:
       postgres:

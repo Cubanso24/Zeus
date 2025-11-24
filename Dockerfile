@@ -22,9 +22,14 @@ COPY src/ ./src/
 COPY configs/ ./configs/
 COPY models/ ./models/
 COPY data/ ./data/
+COPY scripts/ ./scripts/
+COPY startup.sh ./startup.sh
 
 # Create necessary directories
-RUN mkdir -p /app/data/feedback
+RUN mkdir -p /app/data/feedback /app/logs
+
+# Make startup script executable
+RUN chmod +x /app/startup.sh
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -38,10 +43,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=600s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Run the server
-CMD ["python", "-m", "src.inference.server", \
-     "--model-path", "models/splunk-query-llm-v2", \
-     "--base-model", "mistralai/Mistral-7B-Instruct-v0.2", \
-     "--host", "0.0.0.0", \
-     "--port", "8080", \
-     "--device", "cpu"]
+# Run the startup script which initializes DB and starts the server
+CMD ["/app/startup.sh"]

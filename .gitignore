@@ -62,6 +62,7 @@ data/processed/*
 
 # Logs
 logs/
+!logs/README.md
 *.log
 wandb/
 training_output.log

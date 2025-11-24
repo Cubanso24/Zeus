@@ -10,14 +10,14 @@ import click
 from loguru import logger
 
 from src.database.database import engine, Base, get_db_context
-from src.database.models import User, Query, Feedback
+from src.database.models import User, Query, Feedback, TrainingJob
 from src.database.auth import get_password_hash
 
 
 @click.command()
 @click.option('--create-admin', is_flag=True, help='Create an admin user')
 @click.option('--admin-username', default='admin', help='Admin username')
-@click.option('--admin-email', default='admin@zeus.local', help='Admin email')
+@click.option('--admin-email', default='admin@example.com', help='Admin email')
 @click.option('--admin-password', default='admin123', help='Admin password')
 @click.option('--drop-existing', is_flag=True, help='Drop existing tables before creating')
 def init_database(

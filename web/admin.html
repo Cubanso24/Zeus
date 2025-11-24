@@ -420,8 +420,8 @@
     </div>
 
     <script>
-        // Configuration
-        const API_BASE = 'http://localhost:8080';
+        // Auto-detect API URL based on environment
+        const API_BASE = window.location.port === '8081' ? 'http://localhost:8080' : '/api';
         let authToken = localStorage.getItem('auth_token');
         let currentUser = null;
 

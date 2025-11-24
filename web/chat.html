@@ -694,6 +694,11 @@
             background: #c82333;
         }
     </style>
+    <script>
+        // Auto-detect API URL based on environment
+        // Native: http://localhost:8080, Docker: /api (nginx proxy)
+        const API_URL = window.location.port === '8081' ? 'http://localhost:8080' : '/api';
+    </script>
     <script src="auth.js"></script>
 </head>
 <body>
@@ -763,7 +768,6 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8080';
         let lastUserQuery = '';
 
         async function loadHistory() {
@@ -923,7 +927,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                addMessage(`Error: ${error.message}. Make sure the API server is running on port 8000.`, 'assistant', false, true);
+                addMessage(`Error: ${error.message}. Please check your connection and try again.`, 'assistant', false, true);
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = 'Send';

@@ -16,7 +16,7 @@ from src.database.auth import get_password_hash
 
 def create_admin_user(
     username: str = "admin",
-    email: str = "admin@zeus.local",
+    email: str = "admin@example.com",
     password: str = "admin123",
     full_name: str = "Zeus Administrator"
 ):
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Create admin user for Zeus")
     parser.add_argument("--username", default="admin", help="Admin username")
-    parser.add_argument("--email", default="admin@zeus.local", help="Admin email")
+    parser.add_argument("--email", default="admin@example.com", help="Admin email")
     parser.add_argument("--password", default="admin123", help="Admin password")
     parser.add_argument("--full-name", default="Zeus Administrator", help="Full name")
 

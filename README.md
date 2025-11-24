@@ -1,374 +1,424 @@
 # Zeus - Splunk Query LLM
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.9+-blue.svg)
-
-Zeus is a fine-tuned Large Language Model (LLM) designed to generate accurate Splunk queries for cybersecurity analysts. The model intelligently generates SPL (Splunk Processing Language) queries from natural language descriptions or asks clarifying questions when the request is ambiguous.
+Zeus is a fine-tuned Large Language Model that generates Splunk queries from natural language descriptions. Built for cybersecurity analysts, Zeus can convert questions like "Find failed SSH logins in the last 24 hours" into accurate SPL queries.
 
 ## Features
 
-- **Intelligent Query Generation**: Converts natural language requests into accurate Splunk queries
-- **Clarification Requests**: Asks for more information when the request is ambiguous instead of making assumptions
-- **Cybersecurity Focus**: Optimized for security use cases including threat detection, incident investigation, and security monitoring
-- **Multiple Interfaces**: CLI, API server, web UI, and Python library
-- **Admin Dashboard**: Monitor queries, manage user feedback, view system metrics, and trigger model retraining
-- **Auto-Scaling**: Docker-based deployment with easy horizontal scaling for handling high loads
-- **Fine-tuning Pipeline**: Complete pipeline for training on custom data
-- **Evaluation Framework**: Comprehensive metrics for model evaluation
+- Natural language to Splunk query generation
+- Asks clarifying questions when requests are ambiguous
+- Web UI with query history and feedback system
+- Admin dashboard for monitoring and model retraining
+- REST API for integrations
+- GPU-accelerated inference (CUDA support)
+- Horizontal scaling with load balancing
 
 ## Quick Start
 
-### Docker Deployment (Recommended)
+### Prerequisites
 
-The easiest way to run Zeus is with Docker Compose:
+For GPU servers (recommended):
+- NVIDIA GPU with CUDA support
+- Docker and Docker Compose with NVIDIA Container Toolkit
+- 16GB+ GPU memory for optimal performance
 
+For CPU-only deployment:
+- 16GB+ RAM
+- Docker and Docker Compose
+
+### Installation
+
+1. Clone the repository:
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/Zeus.git
 cd Zeus
+```
 
-# Start Zeus with 3 API instances
-docker compose up -d --scale zeus-api=3
+2. Create environment file:
+```bash
+cp .env.example .env
+# Edit .env and set secure passwords and secret keys
+```
 
-# Create admin user
+3. Deploy with Docker Compose:
+```bash
+# For GPU servers (H100, A100, etc.)
+docker compose up -d --build
+
+# To scale to multiple API instances
+docker compose up -d --build --scale zeus-api=3
+```
+
+4. Access the application:
+- Web UI: http://localhost:8081
+- API: http://localhost:8081/api (proxied through nginx)
+- Admin Dashboard: http://localhost:8081/admin.html
+
+5. Create admin user:
+```bash
 docker compose exec zeus-api python scripts/create_admin_user.py
-
-# Access the application
-# Frontend: http://localhost:8081
-# Admin Dashboard: http://localhost:8081/admin.html
 ```
 
-See [SCALING.md](SCALING.md) for scaling instructions and [ADMIN.md](ADMIN.md) for admin dashboard documentation.
+## GPU Support
 
-### Local Installation
+Zeus automatically detects and uses NVIDIA GPUs when available. The Docker setup is pre-configured for GPU acceleration using CUDA 11.8.
+
+### Verify GPU Usage
+
+Check if Zeus is using your GPU:
+```bash
+# Check container logs
+docker compose logs zeus-api | grep -i cuda
+
+# Monitor GPU usage
+nvidia-smi -l 1
+```
+
+If GPU is not detected:
+1. Ensure NVIDIA Container Toolkit is installed
+2. Verify Docker has GPU access: `docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi`
+3. Check CUDA availability in the container: `docker compose exec zeus-api python -c "import torch; print(torch.cuda.is_available())"`
+
+## Usage
+
+### Web Interface
+
+1. Open http://localhost:8081
+2. Register a new account or login
+3. Enter natural language queries like:
+   - "Show me failed login attempts in the last hour"
+   - "Find unusual network traffic patterns"
+   - "List all events from index=security with error codes"
+4. Provide feedback on generated queries to improve the model
+
+### REST API
+
+Generate queries programmatically:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/Zeus.git
-cd Zeus
+# Get authentication token
+TOKEN=$(curl -X POST http://localhost:8081/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "your-username", "password": "your-password"}' \
+  | jq -r '.access_token')
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Or install in development mode
-pip install -e .
-```
-
-### Using the Pre-trained Model
-
-#### CLI Interface
-
-```bash
-# Interactive mode
-python -m src.inference.cli \
-  --model-path models/splunk-query-llm \
-  --interactive
-
-# Single query
-python -m src.inference.cli \
-  --model-path models/splunk-query-llm \
-  --instruction "Find failed SSH login attempts in the last 24 hours"
-```
-
-#### Python API
-
-```python
-from src.inference.model import SplunkQueryGenerator
-
-# Load model
-generator = SplunkQueryGenerator(
-    model_path="models/splunk-query-llm"
-)
-
-# Generate query
-query = generator.generate_query(
-    instruction="Show me all failed login attempts",
-    input_text="Time range: last 24 hours"
-)
-
-print(query)
-# Output: index=* (failed OR failure) (login OR authentication) earliest=-24h
-```
-
-#### REST API Server
-
-```bash
-# Start the server
-python -m src.inference.server \
-  --model-path models/splunk-query-llm \
-  --host 0.0.0.0 \
-  --port 8000
-
-# Make a request
-curl -X POST http://localhost:8000/generate \
+# Generate a query
+curl -X POST http://localhost:8081/generate \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "instruction": "Find failed login attempts",
-    "input": "Last 24 hours",
+    "instruction": "Find failed SSH login attempts",
     "temperature": 0.1
   }'
 ```
+
+### Python Client
+
+```python
+import requests
+
+# Login
+response = requests.post('http://localhost:8081/auth/login', json={
+    'username': 'your-username',
+    'password': 'your-password'
+})
+token = response.json()['access_token']
+
+# Generate query
+response = requests.post(
+    'http://localhost:8081/generate',
+    headers={'Authorization': f'Bearer {token}'},
+    json={
+        'instruction': 'Find all failed login attempts in the last 24 hours',
+        'temperature': 0.1
+    }
+)
+
+query = response.json()['query']
+print(f"Generated query: {query}")
+```
+
+## Admin Dashboard
+
+Access the admin dashboard at http://localhost:8081/admin.html to:
+- View system metrics (queries/day, user activity, GPU usage)
+- Monitor feedback and approval rates
+- Review all user queries and feedback
+- Export feedback data for retraining
+- Trigger model retraining jobs
+- Manage users and permissions
+
+## Configuration
+
+### Environment Variables
+
+Edit `.env` to configure:
+
+```bash
+# Database
+POSTGRES_PASSWORD=your_secure_database_password
+
+# JWT Authentication
+SECRET_KEY=your_super_secret_jwt_key_change_this
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+# Model Settings (optional)
+MODEL_PATH=models/splunk-query-llm-v2
+BASE_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+DEVICE=auto  # auto, cuda, or cpu
+```
+
+### Scaling
+
+Scale the number of API instances based on load:
+
+```bash
+# Scale to 5 instances
+docker compose up -d --scale zeus-api=5
+
+# Scale down to 2 instances
+docker compose up -d --scale zeus-api=2
+```
+
+NGINX automatically load balances requests across all instances.
+
+### Model Configuration
+
+To use a different base model, edit `configs/training_config.yaml`:
+
+```yaml
+model:
+  base_model: "mistralai/Mistral-7B-Instruct-v0.2"  # Change this
+  model_max_length: 2048
+  torch_dtype: "bfloat16"
+```
+
+Common models:
+- `mistralai/Mistral-7B-Instruct-v0.2` - Fast, efficient (default)
+- `meta-llama/Llama-2-7b-chat-hf` - Good general purpose
+- `codellama/CodeLlama-7b-Instruct-hf` - Optimized for code/queries
 
 ## Training Your Own Model
 
 ### 1. Prepare Training Data
 
-Create JSONL files in `data/raw/` with the following format:
+Create JSONL files in `data/raw/` with this format:
 
 ```json
 {"instruction": "Find failed SSH login attempts", "input": "", "output": "index=linux sourcetype=linux_secure \"Failed password\" earliest=-24h"}
-{"instruction": "Show me suspicious activity", "input": "", "output": "CLARIFICATION: What type of suspicious activity are you looking for?..."}
+{"instruction": "Show me suspicious activity", "input": "", "output": "CLARIFICATION: What type of suspicious activity are you looking for? Failed logins, unusual network traffic, or malware activity?"}
 ```
 
 ### 2. Process Data
 
 ```bash
-python -m src.data_preparation.prepare_data \
+docker compose exec zeus-api python -m src.data_preparation.prepare_data \
   --input-dir data/raw \
   --output-dir data/processed \
-  --format-type alpaca \
-  --train-ratio 0.8 \
-  --val-ratio 0.1 \
-  --test-ratio 0.1
+  --format-type alpaca
 ```
 
-### 3. Configure Training
-
-Edit `configs/training_config.yaml` to customize:
-- Base model selection
-- LoRA parameters
-- Training hyperparameters
-- Data paths
-
-### 4. Fine-tune Model
+### 3. Train Model
 
 ```bash
-python -m src.training.train \
+docker compose exec zeus-api python -m src.training.train \
   --config configs/training_config.yaml
 ```
 
-### 5. Evaluate Model
+Training will use all available GPUs and save checkpoints to `models/`.
+
+### 4. Evaluate Model
 
 ```bash
-python -m src.evaluation.evaluate \
+docker compose exec zeus-api python -m src.evaluation.evaluate \
   --model-path models/splunk-query-llm \
   --test-file data/processed/test_alpaca.jsonl \
-  --output-dir evaluation_results \
-  --save-predictions
+  --output-dir evaluation_results
 ```
+
+## Troubleshooting
+
+### GPU Not Detected
+
+**Problem**: Zeus runs on CPU despite having GPU
+
+**Solution**:
+1. Install NVIDIA Container Toolkit:
+   ```bash
+   # Ubuntu/Debian
+   distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+   curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+   curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+   sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+   sudo systemctl restart docker
+   ```
+
+2. Verify Docker GPU access:
+   ```bash
+   docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+   ```
+
+3. Rebuild and restart Zeus:
+   ```bash
+   docker compose down
+   docker compose up -d --build
+   ```
+
+### Out of Memory Error
+
+**Problem**: GPU runs out of memory during inference
+
+**Solution**:
+- Reduce batch size in generation requests
+- Scale down the number of API replicas
+- Use a smaller model
+- Enable model quantization (edit model config to use 4-bit or 8-bit)
+
+### Container Won't Start
+
+**Problem**: `zeus-api` container crashes on startup
+
+**Solution**:
+1. Check logs: `docker compose logs zeus-api`
+2. Verify database is ready: `docker compose logs postgres`
+3. Check disk space: `df -h`
+4. Verify model files exist: `ls -la models/`
+
+### Slow Query Generation
+
+**Problem**: Queries take too long to generate
+
+**Solution**:
+- Verify GPU is being used: `nvidia-smi`
+- Reduce `max_new_tokens` in generation requests
+- Scale up more API instances
+- Use a smaller/faster model
 
 ## Project Structure
 
 ```
 Zeus/
+├── configs/              # Training and model configuration
 ├── data/
-│   ├── raw/              # Raw training data (JSONL)
-│   ├── processed/        # Processed training data
-│   ├── synthetic/        # Synthetically generated data
-│   └── evaluation/       # Evaluation datasets
+│   ├── raw/             # Training data (JSONL format)
+│   ├── processed/       # Processed training data
+│   └── feedback/        # User feedback for retraining
+├── models/              # Trained models and checkpoints
 ├── src/
-│   ├── data_preparation/ # Data loading, validation, formatting
-│   ├── training/         # Fine-tuning scripts
-│   ├── inference/        # Model inference (CLI, API, library)
-│   ├── evaluation/       # Evaluation metrics
-│   └── utils/           # Utilities and configuration
-├── models/              # Saved models and checkpoints
-├── configs/            # Configuration files
-├── scripts/            # Helper scripts
-├── examples/           # Example usage
-├── tests/              # Unit and integration tests
-└── notebooks/          # Jupyter notebooks
+│   ├── data_preparation/  # Data processing
+│   ├── training/          # Model training
+│   ├── inference/         # API server and CLI
+│   ├── evaluation/        # Metrics and evaluation
+│   └── database/          # Database models and auth
+├── scripts/             # Utility scripts
+├── web/                 # Frontend HTML/JS/CSS
+├── docker-compose.yml   # Docker orchestration
+├── Dockerfile          # Container image definition
+└── README.md           # This file
 ```
-
-## Training Data Format
-
-Zeus supports multiple training data formats:
-
-### Alpaca Format
-
-```json
-{
-  "instruction": "Natural language request",
-  "input": "Additional context (optional)",
-  "output": "Splunk query or clarification request"
-}
-```
-
-### Chat Format
-
-```json
-{
-  "messages": [
-    {"role": "system", "content": "System prompt"},
-    {"role": "user", "content": "User request"},
-    {"role": "assistant", "content": "Splunk query"}
-  ]
-}
-```
-
-### Clarification Format
-
-Prefix clarification requests with `CLARIFICATION:`:
-
-```json
-{
-  "instruction": "Ambiguous request",
-  "input": "",
-  "output": "CLARIFICATION: Please provide more details about..."
-}
-```
-
-## Model Behavior
-
-Zeus is trained to:
-
-1. **Generate Queries**: When given clear instructions, produce accurate Splunk queries
-2. **Ask for Clarification**: When instructions are ambiguous, ask specific questions
-3. **Handle Context**: Use additional context provided in the `input` field
-4. **Focus on Security**: Prioritize cybersecurity use cases and best practices
-
-### Example Interactions
-
-**Clear Request:**
-```
-User: "Find failed login attempts in the last hour"
-Zeus: index=* (failed OR failure) (login OR authentication) earliest=-1h
-```
-
-**Ambiguous Request:**
-```
-User: "Show me suspicious activity"
-Zeus: CLARIFICATION: I can help you find suspicious activity, but I need more specifics. What type of suspicious activity are you looking for? For example:
-- Failed login attempts or brute force attacks?
-- Unusual network traffic or data exfiltration?
-- Malware or process execution?
-...
-```
-
-## Configuration
-
-### Model Configuration
-
-Configure base model, quantization, and model parameters in `configs/training_config.yaml`:
-
-```yaml
-model:
-  base_model: "mistralai/Mistral-7B-Instruct-v0.2"
-  model_max_length: 2048
-  torch_dtype: "bfloat16"
-  load_in_4bit: false
-```
-
-### LoRA Configuration
-
-Adjust LoRA parameters for parameter-efficient fine-tuning:
-
-```yaml
-lora:
-  enabled: true
-  r: 16
-  lora_alpha: 32
-  lora_dropout: 0.05
-  target_modules:
-    - "q_proj"
-    - "k_proj"
-    - "v_proj"
-```
-
-### Training Configuration
-
-Customize training hyperparameters:
-
-```yaml
-training:
-  num_train_epochs: 3
-  per_device_train_batch_size: 4
-  learning_rate: 2.0e-4
-  gradient_accumulation_steps: 4
-```
-
-## Evaluation Metrics
-
-Zeus includes comprehensive evaluation metrics:
-
-- **Exact Match**: Percentage of queries matching exactly
-- **Normalized Match**: Match after normalizing whitespace and case
-- **Token Overlap**: F1 score of token-level overlap
-- **Command Accuracy**: Accuracy of SPL commands used
-- **Syntax Validity**: Percentage of syntactically valid queries
-- **Clarification Accuracy**: Correct identification of ambiguous requests
 
 ## API Reference
 
-### REST API Endpoints
+### Authentication
+
+All API endpoints except `/auth/register` and `/auth/login` require authentication.
+
+#### POST /auth/register
+Register a new user account.
+
+#### POST /auth/login
+Login and receive JWT token.
+
+#### GET /auth/me
+Get current user information.
+
+### Query Generation
 
 #### POST /generate
-
 Generate a Splunk query from natural language.
 
 **Request:**
 ```json
 {
-  "instruction": "string",
-  "input": "string (optional)",
-  "max_new_tokens": 512,
+  "instruction": "Find failed login attempts",
+  "input": "",
   "temperature": 0.1,
-  "top_p": 0.95,
-  "num_return_sequences": 1
+  "max_new_tokens": 512
 }
 ```
 
 **Response:**
 ```json
 {
-  "query": "string",
+  "query": "index=* (failed OR failure) (login OR authentication)",
   "is_clarification": false,
   "clarification_questions": [],
-  "alternatives": []
+  "alternatives": [],
+  "query_id": 123
 }
 ```
 
 #### POST /batch_generate
+Generate multiple queries in one request.
 
-Generate multiple queries in batch.
+#### POST /feedback
+Submit feedback on generated query.
 
-#### GET /health
+### Admin Endpoints (Requires Admin Role)
 
-Health check endpoint.
+#### GET /api/admin/analytics
+System analytics and metrics.
 
-## Contributing
+#### GET /api/admin/queries
+View all user queries with filters.
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+#### GET /api/admin/feedback
+View all user feedback with filters.
+
+#### POST /api/admin/feedback/export
+Export feedback as training data (JSONL).
+
+#### POST /api/admin/training/start
+Trigger model retraining with feedback data.
+
+#### GET /api/admin/training/jobs
+List training job history.
+
+## Security
+
+### Production Deployment
+
+Before deploying to production:
+
+1. Change default passwords in `.env`:
+   ```bash
+   # Generate secure random secrets
+   openssl rand -base64 32  # For SECRET_KEY
+   openssl rand -base64 24  # For POSTGRES_PASSWORD
+   ```
+
+2. Configure CORS in `src/inference/server.py`:
+   ```python
+   allow_origins=["https://yourdomain.com"]  # Change from ["*"]
+   ```
+
+3. Set up HTTPS with proper SSL certificates (use nginx or a reverse proxy)
+
+4. Enable firewall rules to restrict access
+
+5. Regularly update dependencies and base images
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Citation
+## Support
 
-If you use Zeus in your research or work, please cite:
-
-```bibtex
-@software{zeus_splunk_llm,
-  title = {Zeus: Fine-tuned LLM for Splunk Query Generation},
-  author = {Your Name},
-  year = {2025},
-  url = {https://github.com/yourusername/Zeus}
-}
-```
+- Report issues: [GitHub Issues](https://github.com/yourusername/Zeus/issues)
+- Documentation: This README
+- Questions: Open a GitHub Discussion
 
 ## Acknowledgments
 
 - Built with [Hugging Face Transformers](https://huggingface.co/transformers/)
 - Uses [PEFT](https://github.com/huggingface/peft) for efficient fine-tuning
-- Inspired by security analyst workflows
-
-## Support
-
-For issues, questions, or contributions:
-- Open an issue on [GitHub](https://github.com/yourusername/Zeus/issues)
-- Email: your.email@example.com
-
----
-
-**Note**: This model is designed to assist cybersecurity analysts and should be used in conjunction with human expertise. Always validate generated queries before running them in production environments.
+- Base models from [Mistral AI](https://mistral.ai/)

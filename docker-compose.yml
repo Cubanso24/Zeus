@@ -29,6 +29,8 @@ services:
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=10080
       - HF_HOME=/app/.cache/huggingface
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
       - ./data/feedback:/app/data/feedback
       - ./models:/app/models  # Read-write for saving fine-tuned models
@@ -41,6 +43,12 @@ services:
       - zeus-network
     restart: unless-stopped
     deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
       replicas: 3  # Default number of instances
 
   # Nginx Load Balancer

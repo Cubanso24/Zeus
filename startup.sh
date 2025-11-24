@@ -43,4 +43,4 @@ exec python -m src.inference.server \
     --base-model "${BASE_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}" \
     --host "${HOST:-0.0.0.0}" \
     --port "${PORT:-8080}" \
-    --device "${DEVICE:-cpu}"
+    --device "${DEVICE:-auto}"

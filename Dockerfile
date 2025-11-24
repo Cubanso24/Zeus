@@ -1,15 +1,22 @@
-# Use Python 3.9 as base image
-FROM python:3.9-slim
+# Use NVIDIA CUDA base image for GPU support
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies
+# Install Python 3.10
 RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
     build-essential \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.10 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+
+# Set working directory
+WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .

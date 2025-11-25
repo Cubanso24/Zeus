@@ -22,9 +22,23 @@ done
 
 echo "✓ PostgreSQL is ready!"
 
+# Download base model if not cached
+echo ""
+echo "========================================="
+echo "Checking Base Model Cache"
+echo "========================================="
+python scripts/download_base_model.py --base-model "${BASE_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}"
+
+if [ $? -ne 0 ]; then
+    echo "⚠ Base model download failed. Server may fail to start."
+    echo "  Check internet connection and disk space."
+fi
+
 # Initialize database tables
 echo ""
-echo "Initializing database tables..."
+echo "========================================="
+echo "Database Initialization"
+echo "========================================="
 python scripts/init_db.py --create-admin
 
 if [ $? -eq 0 ]; then

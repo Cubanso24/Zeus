@@ -137,8 +137,14 @@ if $DOCKER_COMPOSE up -d --build --scale zeus-api=$NUM_INSTANCES; then
     echo ""
 
     # Wait for services to be healthy
-    echo "Waiting for services to start (this may take 1-2 minutes)..."
-    sleep 10
+    echo ""
+    echo -e "${YELLOW}Important: First startup will download the 14GB base model.${NC}"
+    echo -e "${YELLOW}This can take 5-15 minutes depending on your internet speed.${NC}"
+    echo ""
+    echo "Waiting for services to start..."
+    echo "You can monitor progress with: docker compose logs -f zeus-api"
+    echo ""
+    sleep 5
 
     # Check if containers are running
     if $DOCKER_COMPOSE ps | grep -q "Up"; then
@@ -146,17 +152,22 @@ if $DOCKER_COMPOSE up -d --build --scale zeus-api=$NUM_INSTANCES; then
         echo -e "${GREEN}Services are running!${NC}"
         echo ""
         echo "Next steps:"
-        echo "  1. Create an admin user:"
+        echo ""
+        echo "  1. Wait for model download to complete (first time only):"
+        echo "     $DOCKER_COMPOSE logs -f zeus-api"
+        echo "     Look for: '✓ Base model cached successfully!'"
+        echo ""
+        echo "  2. Check system health:"
+        echo "     ./scripts/check_health.sh"
+        echo ""
+        echo "  3. Create an admin user:"
         echo "     $DOCKER_COMPOSE exec zeus-api python scripts/create_admin_user.py"
         echo ""
-        echo "  2. Access the application:"
+        echo "  4. Access the application:"
         echo "     - Web UI: http://localhost:8081"
         echo "     - Admin Dashboard: http://localhost:8081/admin.html"
         echo ""
-        echo "  3. View logs:"
-        echo "     $DOCKER_COMPOSE logs -f zeus-api"
-        echo ""
-        echo "  4. Monitor GPU usage (if available):"
+        echo "  5. Monitor GPU usage (if available):"
         echo "     nvidia-smi -l 1"
         echo ""
         echo "To stop Zeus:"

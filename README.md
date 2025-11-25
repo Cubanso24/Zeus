@@ -235,7 +235,52 @@ docker compose exec zeus-api python -m src.evaluation.evaluate \
   --output-dir evaluation_results
 ```
 
+## Health Check
+
+After deployment, verify Zeus is working correctly:
+
+```bash
+./scripts/check_health.sh
+```
+
+This will check:
+- Docker containers are running
+- PostgreSQL is healthy
+- API servers have loaded the model
+- CUDA/GPU is detected
+
 ## Troubleshooting
+
+### Login Works But Can't Generate Queries
+
+**Problem**: You can access the login page, but query generation doesn't work or times out.
+
+**Root Cause**: The base model (14GB) failed to download on first startup.
+
+**Solution**:
+1. Check if the model is being downloaded:
+   ```bash
+   docker compose logs zeus-api | grep -i "download\|model"
+   ```
+
+2. Manually download the base model:
+   ```bash
+   docker compose exec zeus-api python scripts/download_base_model.py
+   ```
+
+3. If download keeps failing, pre-download on your local machine and copy to server:
+   ```bash
+   # On a machine with good internet:
+   python scripts/download_base_model.py
+
+   # Copy the cache to your server:
+   rsync -avz ~/.cache/huggingface/ your-server:~/.cache/huggingface/
+   ```
+
+4. Restart Zeus:
+   ```bash
+   docker compose restart zeus-api
+   ```
 
 ### GPU Not Detected
 

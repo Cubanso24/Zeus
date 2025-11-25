@@ -1,7 +1,7 @@
 # Use NVIDIA CUDA base image for GPU support
 FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-# Install Python 3.10
+# Install Python 3.10 and dependencies
 RUN apt-get update && apt-get install -y \
     python3.10 \
     python3.10-dev \
@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     curl \
+    postgresql-client \
+    netcat \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3.10 as default

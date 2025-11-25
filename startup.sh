@@ -7,13 +7,26 @@ echo "========================================="
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
-max_retries=30
+max_retries=60
 retry_count=0
 
-while ! python -c "from src.database.database import engine; engine.connect()" 2>/dev/null; do
+# Install postgresql-client if not present (for pg_isready)
+if ! command -v pg_isready &> /dev/null; then
+    echo "Installing postgresql-client..."
+    apt-get update -qq && apt-get install -y -qq postgresql-client > /dev/null 2>&1
+fi
+
+# Extract connection details from DATABASE_URL or use defaults
+DB_HOST="postgres"
+DB_USER="zeus_user"
+DB_NAME="zeus_db"
+
+while ! pg_isready -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" > /dev/null 2>&1; do
     retry_count=$((retry_count + 1))
     if [ $retry_count -ge $max_retries ]; then
         echo "ERROR: PostgreSQL did not become ready in time"
+        echo "Logs from PostgreSQL:"
+        echo "  Run: docker compose logs postgres"
         exit 1
     fi
     echo "Waiting for PostgreSQL... (attempt $retry_count/$max_retries)"

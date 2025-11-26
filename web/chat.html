@@ -697,7 +697,7 @@
     <script>
         // Auto-detect API URL based on environment
         // Native: http://localhost:8080, Docker: /api (nginx proxy)
-        const API_URL = window.location.port === '8081' ? 'http://localhost:8080' : '/api';
+        const API_URL = '';  // Use relative URLs
     </script>
     <script src="auth.js"></script>
 </head>

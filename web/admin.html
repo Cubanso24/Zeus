@@ -421,7 +421,7 @@
 
     <script>
         // Auto-detect API URL based on environment
-        const API_BASE = window.location.port === '8081' ? 'http://localhost:8080' : '/api';
+        const API_BASE = '';  // Use relative URLs
         let authToken = localStorage.getItem('auth_token');
         let currentUser = null;
 

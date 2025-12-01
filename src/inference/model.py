@@ -370,6 +370,7 @@ class SplunkQueryGenerator:
         instruction: str,
         max_new_tokens: int = 300,
         temperature: float = 0.3,
+        explanation_format: str = "structured",
     ) -> str:
         """
         Generate an explanation for a Splunk query using the LLM.
@@ -379,12 +380,26 @@ class SplunkQueryGenerator:
             instruction: The original user instruction
             max_new_tokens: Maximum tokens to generate
             temperature: Sampling temperature
+            explanation_format: 'structured' for Input/Output sections, 'paragraph' for flowing text
 
         Returns:
             Explanation of what the query does
         """
-        # Create an instruction that asks for explanation, not query generation
-        explain_instruction = f"""Explain this Splunk query in plain English for a security analyst.
+        # Create format-specific instruction
+        if explanation_format == "paragraph":
+            explain_instruction = f"""Explain this Splunk query in plain English for a security analyst.
+
+Query: {query}
+
+Write a clear, concise paragraph explanation that describes:
+- What data sources the query searches
+- What filters or conditions are applied
+- What the output will show
+
+Keep it to 2-3 sentences. Do not use bullet points or sections."""
+        else:
+            # Default to structured format
+            explain_instruction = f"""Explain this Splunk query in plain English for a security analyst.
 
 Query: {query}
 

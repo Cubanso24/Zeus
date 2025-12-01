@@ -40,6 +40,7 @@ class QueryRequest(BaseModel):
     temperature: float = Field(default=0.1, ge=0.0, le=2.0, description="Sampling temperature")
     top_p: float = Field(default=0.95, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     num_return_sequences: int = Field(default=1, ge=1, le=5, description="Number of queries to generate")
+    explanation_format: str = Field(default="structured", description="Explanation format: 'structured' or 'paragraph'")
 
 
 class QueryResponse(BaseModel):
@@ -550,6 +551,7 @@ Use 'main' or 'os' for general system logs, and use sourcetype to filter specifi
                 explanation = model.generate_explanation(
                     query=primary_query,
                     instruction=request.instruction,
+                    explanation_format=request.explanation_format,
                 )
                 if explanation:
                     logger.info(f"Explanation generated: {explanation[:100]}...")

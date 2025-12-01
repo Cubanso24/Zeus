@@ -90,102 +90,60 @@
             background: #c82333;
         }
 
-        /* Statistics Panel */
-        .stats-panel {
+        /* Explanation Format Toggle */
+        .format-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
             background: #2a2a3e;
-            margin: 10px;
-            padding: 12px;
             border-radius: 8px;
+            margin: 10px;
             border: 1px solid #3a3a4e;
         }
 
-        .stats-header {
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .stats-refresh {
-            font-size: 10px;
-            color: #888;
-            cursor: pointer;
-        }
-
-        .stats-refresh:hover {
-            color: #667eea;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            font-size: 12px;
-            border-bottom: 1px solid #3a3a4e;
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .stat-label {
-            color: #999;
-        }
-
-        .stat-value {
-            color: #e0e0e0;
-            font-weight: 600;
-        }
-
-        .approval-rate {
-            font-size: 18px;
-            text-align: center;
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 6px;
-            font-weight: 700;
-        }
-
-        .approval-rate.good {
-            background: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            border: 2px solid #28a745;
-        }
-
-        .approval-rate.warning {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-            border: 2px solid #ffc107;
-        }
-
-        .approval-rate.poor {
-            background: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 2px solid #dc3545;
-        }
-
-        .recent-feedback-list {
-            margin-top: 8px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .recent-item {
+        .format-toggle-label {
             font-size: 11px;
-            padding: 4px 0;
-            border-bottom: 1px solid #3a3a4e;
+            color: #888;
         }
 
-        .recent-item:last-child {
-            border-bottom: none;
+        .format-toggle-btn {
+            padding: 4px 10px;
+            border: 1px solid #3a3a4e;
+            background: transparent;
+            color: #888;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .recent-rating {
-            display: inline-block;
-            margin-right: 4px;
+        .format-toggle-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .format-toggle-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Stop Button */
+        .stop-btn {
+            padding: 12px 24px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+        }
+
+        .stop-btn:hover {
+            background: #c82333;
         }
 
         /* Main Chat Container */
@@ -777,20 +735,16 @@
             <div class="history-header">
                 📜 Query History
             </div>
-            <div class="history-list" id="historyList">
+            <div class="history-list" id="historyList" style="flex: 1;">
                 <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>
             </div>
             <button class="clear-history-btn" onclick="clearHistory()">Clear History</button>
 
-            <!-- Statistics Panel -->
-            <div class="stats-panel">
-                <div class="stats-header">
-                    <span>📊 Feedback Stats</span>
-                    <span class="stats-refresh" onclick="loadStats()" title="Refresh stats">🔄</span>
-                </div>
-                <div id="statsContent">
-                    <p style="text-align: center; color: #666; font-size: 11px;">Loading...</p>
-                </div>
+            <!-- Explanation Format Toggle -->
+            <div class="format-toggle">
+                <span class="format-toggle-label">Explanation:</span>
+                <button class="format-toggle-btn active" id="formatStructured" onclick="setExplanationFormat('structured')">Structured</button>
+                <button class="format-toggle-btn" id="formatParagraph" onclick="setExplanationFormat('paragraph')">Paragraph</button>
             </div>
         </div>
 
@@ -824,6 +778,7 @@
                         onkeypress="handleKeyPress(event)"
                     >
                     <button id="sendBtn" onclick="sendMessage()">Send</button>
+                    <button id="stopBtn" class="stop-btn" onclick="stopGeneration()">Stop</button>
                 </div>
                 <div class="button-row">
                     <button id="generateAltBtn" onclick="generateAlternatives()">🔄 Generate 3 Alternatives</button>
@@ -834,6 +789,30 @@
 
     <script>
         let lastUserQuery = '';
+        let currentAbortController = null;
+        let explanationFormat = 'structured'; // 'structured' or 'paragraph'
+
+        // Explanation format toggle
+        function setExplanationFormat(format) {
+            explanationFormat = format;
+            document.getElementById('formatStructured').classList.toggle('active', format === 'structured');
+            document.getElementById('formatParagraph').classList.toggle('active', format === 'paragraph');
+        }
+
+        // Stop generation
+        function stopGeneration() {
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+            const sendBtn = document.getElementById('sendBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send';
+            sendBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            addMessage('Query generation stopped by user.', 'assistant', false, true);
+        }
 
         async function loadHistory() {
             const historyList = document.getElementById('historyList');
@@ -960,10 +939,14 @@
             addMessage(message, 'user');
             input.value = '';
 
-            // Disable input while processing
+            // Setup abort controller for stop functionality
+            currentAbortController = new AbortController();
+
+            // Show stop button, hide send button
             const sendBtn = document.getElementById('sendBtn');
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<div class="loading"></div>';
+            const stopBtn = document.getElementById('stopBtn');
+            sendBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
 
             try {
                 const response = await fetch(`${API_URL}/generate`, {
@@ -974,8 +957,10 @@
                         input: '',
                         temperature: 0.3,
                         max_new_tokens: 256,
-                        repetition_penalty: 1.2
-                    })
+                        repetition_penalty: 1.2,
+                        explanation_format: explanationFormat
+                    }),
+                    signal: currentAbortController.signal
                 });
 
                 if (!response.ok) {
@@ -991,11 +976,16 @@
                 loadHistory();
 
             } catch (error) {
+                if (error.name === 'AbortError') {
+                    // User cancelled - message already shown by stopGeneration()
+                    return;
+                }
                 console.error('Error:', error);
                 addMessage(`Error: ${error.message}. Please check your connection and try again.`, 'assistant', false, true);
             } finally {
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = 'Send';
+                currentAbortController = null;
+                sendBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
             }
         }
 
@@ -1349,10 +1339,6 @@
                     feedbackContainer.appendChild(status);
                 }
 
-                // Refresh stats to show updated feedback counts
-                console.log('Refreshing stats after feedback submission');
-                setTimeout(() => loadStats(), 500); // Small delay to ensure backend has updated
-
                 console.log('Feedback submitted successfully');
 
             } catch (error) {
@@ -1370,98 +1356,9 @@
             }
         }
 
-        async function loadStats() {
-            const statsContent = document.getElementById('statsContent');
-
-            try {
-                const response = await fetch(`${API_URL}/feedback/stats`, {
-                    headers: getAuthHeaders()
-                });
-                if (!response.ok) {
-                    throw new Error('Failed to fetch stats');
-                }
-
-                const stats = await response.json();
-
-                // Determine approval rate class
-                let rateClass = 'good';
-                if (stats.approval_rate < 50) {
-                    rateClass = 'poor';
-                } else if (stats.approval_rate < 70) {
-                    rateClass = 'warning';
-                }
-
-                // Build HTML
-                let html = '';
-
-                // Approval rate (prominent display)
-                if (stats.total_feedback > 0) {
-                    html += `
-                        <div class="approval-rate ${rateClass}">
-                            ${stats.approval_rate}% Approval
-                        </div>
-                    `;
-
-                    // Show warning if retraining might be needed
-                    if (stats.approval_rate < 70 && stats.total_feedback >= 10) {
-                        html += `
-                            <div style="background: rgba(255, 193, 7, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 11px; color: #ffc107; text-align: center;">
-                                ⚠️ Consider retraining the model
-                            </div>
-                        `;
-                    }
-                }
-
-                // Stats breakdown
-                html += `
-                    <div class="stat-item">
-                        <span class="stat-label">Total Feedback:</span>
-                        <span class="stat-value">${stats.total_feedback}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">👍 Good:</span>
-                        <span class="stat-value" style="color: #28a745;">${stats.good_count}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">👎 Bad:</span>
-                        <span class="stat-value" style="color: #dc3545;">${stats.bad_count}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Corrections:</span>
-                        <span class="stat-value">${stats.corrections_count}</span>
-                    </div>
-                `;
-
-                // Show message if no feedback yet
-                if (stats.total_feedback === 0) {
-                    html = '<p style="text-align: center; color: #666; font-size: 11px;">No feedback yet</p>';
-                }
-
-                statsContent.innerHTML = html;
-
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                statsContent.innerHTML = '<p style="text-align: center; color: #dc3545; font-size: 11px;">Failed to load stats</p>';
-            }
-        }
-
-        // Auto-refresh stats every 60 seconds
-        let statsInterval;
-        function startStatsRefresh() {
-            loadStats(); // Load immediately
-            statsInterval = setInterval(loadStats, 60000); // Then every 60 seconds
-        }
-
-        function stopStatsRefresh() {
-            if (statsInterval) {
-                clearInterval(statsInterval);
-            }
-        }
-
         // Check API health on load
         window.onload = async () => {
             loadHistory();
-            startStatsRefresh();
 
             try {
                 const response = await fetch(`${API_URL}/health`);

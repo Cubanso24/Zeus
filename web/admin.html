@@ -502,7 +502,7 @@
         // Analytics
         async function loadAnalytics() {
             try {
-                const response = await fetch(`${API_BASE}/api/admin/analytics`, {
+                const response = await fetch(`/api/admin/analytics`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -584,9 +584,8 @@
         async function loadQueries() {
             try {
                 const rating = document.getElementById('query-rating-filter')?.value || '';
-                const url = new URL(`${API_BASE}/api/admin/queries`);
-                url.searchParams.append('page', queriesPage);
-                if (rating) url.searchParams.append('rating', rating);
+                let url = `/api/admin/queries?page=${queriesPage}`;
+                if (rating) url += `&rating=${encodeURIComponent(rating)}`;
 
                 const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -625,9 +624,8 @@
         async function loadFeedback() {
             try {
                 const rating = document.getElementById('feedback-rating-filter')?.value || '';
-                const url = new URL(`${API_BASE}/api/admin/feedback`);
-                url.searchParams.append('page', feedbackPage);
-                if (rating) url.searchParams.append('rating', rating);
+                let url = `/api/admin/feedback?page=${feedbackPage}`;
+                if (rating) url += `&rating=${encodeURIComponent(rating)}`;
 
                 const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -685,7 +683,7 @@
             const comment = document.getElementById('edit-comment').value;
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/feedback/${id}`, {
+                const response = await fetch(`/api/admin/feedback/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
@@ -709,7 +707,7 @@
             if (!confirm('Are you sure you want to delete this feedback?')) return;
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/feedback/${id}`, {
+                const response = await fetch(`/api/admin/feedback/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
@@ -727,8 +725,8 @@
         async function exportFeedback() {
             try {
                 const rating = document.getElementById('feedback-rating-filter')?.value || '';
-                const url = new URL(`${API_BASE}/api/admin/feedback/export`);
-                if (rating) url.searchParams.append('rating', rating);
+                let url = `/api/admin/feedback/export`;
+                if (rating) url += `?rating=${encodeURIComponent(rating)}`;
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -755,7 +753,7 @@
         async function loadSystemStats() {
             try {
                 // Load system stats
-                const statsResponse = await fetch(`${API_BASE}/api/admin/system/stats`, {
+                const statsResponse = await fetch(`/api/admin/system/stats`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -777,7 +775,7 @@
                 }
 
                 // Load metrics
-                const metricsResponse = await fetch(`${API_BASE}/api/admin/system/metrics`, {
+                const metricsResponse = await fetch(`/api/admin/system/metrics`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -812,7 +810,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/training/start`, {
+                const response = await fetch(`/api/admin/training/start`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
@@ -838,7 +836,7 @@
 
         async function loadTrainingJobs() {
             try {
-                const response = await fetch(`${API_BASE}/api/admin/training/jobs?page=${trainingPage}`, {
+                const response = await fetch(`/api/admin/training/jobs?page=${trainingPage}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 

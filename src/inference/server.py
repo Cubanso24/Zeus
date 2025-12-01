@@ -427,6 +427,26 @@ async def health_check():
     )
 
 
+@app.get("/cache/status")
+async def cache_status():
+    """Get semantic cache status for debugging."""
+    cache = get_semantic_cache()
+    if cache is None:
+        return {"available": False, "error": "Cache not initialized"}
+
+    stats = cache.get_cache_stats()
+
+    # Add sample of cached instructions for debugging
+    sample_instructions = []
+    if cache.cache:
+        sample_instructions = [c.instruction[:100] for c in cache.cache[:5]]
+
+    return {
+        **stats,
+        "sample_instructions": sample_instructions
+    }
+
+
 # Authentication endpoints
 @app.post("/auth/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):

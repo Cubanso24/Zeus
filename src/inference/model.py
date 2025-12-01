@@ -368,22 +368,90 @@ class SplunkQueryGenerator:
         self,
         query: str,
         instruction: str,
-        max_new_tokens: int = 512,
+        max_new_tokens: int = 300,
         temperature: float = 0.3,
     ) -> str:
         """
-        Generate an explanation for a Splunk query using rule-based parsing.
+        Generate an explanation for a Splunk query using the LLM.
 
         Args:
             query: The generated Splunk query to explain
             instruction: The original user instruction
-            max_new_tokens: Unused, kept for API compatibility
-            temperature: Unused, kept for API compatibility
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
 
         Returns:
             Explanation of what the query does
         """
-        return self._parse_query_explanation(query, instruction)
+        # Create an instruction that asks for explanation, not query generation
+        explain_instruction = f"""Explain this Splunk query in plain English for a security analyst.
+
+Query: {query}
+
+Provide a clear explanation with:
+1. A brief summary of what the query does
+2. Input section: List each search component (index, sourcetype, filters, time range)
+3. Output section: Describe what results will be returned
+
+Format your response as:
+[One sentence summary]
+
+### Input:
+- [component]: [description]
+
+### Output:
+- [what the query returns]"""
+
+        # Format as a standard prompt
+        prompt = f"### Instruction:\n{explain_instruction}\n\n### Response:\n"
+
+        # Tokenize
+        inputs = self.tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=2048,
+        ).to(self.model.device)
+
+        # Generate
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=0.9,
+                do_sample=True,
+                repetition_penalty=1.2,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+
+        # Decode output
+        text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Extract only the response part
+        if "### Response:" in text:
+            explanation = text.split("### Response:")[-1].strip()
+        else:
+            explanation = text[len(prompt):].strip()
+
+        # Clean up - stop at any signs the model is generating a new query
+        stop_patterns = [
+            "\n\n### Instruction:",
+            "\nQuery:",
+            "\nindex=",
+            "\n```",
+        ]
+        for pattern in stop_patterns:
+            if pattern in explanation:
+                explanation = explanation[:explanation.find(pattern)]
+
+        # If explanation is empty or looks like a query, fall back to rule-based
+        if not explanation or explanation.strip().startswith("index="):
+            logger.warning("LLM explanation failed, falling back to rule-based")
+            return self._parse_query_explanation(query, instruction)
+
+        return explanation.strip()
 
     def _parse_query_explanation(self, query: str, instruction: str) -> str:
         """

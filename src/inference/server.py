@@ -536,9 +536,14 @@ async def generate_query(
                     query=primary_query,
                     instruction=request.instruction,
                 )
-                logger.info(f"Explanation generated for query")
+                if explanation:
+                    logger.info(f"Explanation generated: {explanation[:100]}...")
+                else:
+                    logger.warning("Explanation generation returned empty result")
             except Exception as e:
                 logger.warning(f"Failed to generate explanation: {e}")
+                import traceback
+                logger.warning(traceback.format_exc())
                 explanation = None
 
         # Alternative queries

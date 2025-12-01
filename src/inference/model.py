@@ -205,6 +205,9 @@ class SplunkQueryGenerator:
             else:
                 response = text[len(prompt):].strip()
 
+            # Clean up response to remove self-answering
+            response = self.clean_response(response)
+
             generated_texts.append(response)
 
         return generated_texts
@@ -275,7 +278,64 @@ class SplunkQueryGenerator:
         Returns:
             True if response is asking for clarification
         """
-        return response.strip().startswith("CLARIFICATION:")
+        # Check if response starts with or contains CLARIFICATION:
+        return "CLARIFICATION:" in response
+
+    def clean_response(self, response: str) -> str:
+        """
+        Clean up the model response by removing any self-answering or
+        continuation after the main response.
+
+        Args:
+            response: Raw generated response
+
+        Returns:
+            Cleaned response
+        """
+        # If it contains a clarification, extract just the clarification part
+        if "CLARIFICATION:" in response:
+            # Find where CLARIFICATION starts
+            clarification_start = response.find("CLARIFICATION:")
+            # Take everything from CLARIFICATION to the first double newline or end
+            clarification_text = response[clarification_start:]
+
+            # Stop at common continuation patterns that indicate the model is self-responding
+            stop_patterns = [
+                "\n\nAnalyst response:",
+                "\n\nQuery update:",
+                "\n\nUser:",
+                "\n\nResponse:",
+                "\n\n###",
+                "\n\nHere is",
+                "\n\nBased on",
+            ]
+
+            for pattern in stop_patterns:
+                if pattern.lower() in clarification_text.lower():
+                    idx = clarification_text.lower().find(pattern.lower())
+                    clarification_text = clarification_text[:idx]
+                    break
+
+            return clarification_text.strip()
+
+        # For regular queries, stop at any continuation patterns
+        stop_patterns = [
+            "\n\nCLARIFICATION:",
+            "\n\nAnalyst response:",
+            "\n\nQuery update:",
+            "\n\nUser:",
+            "\n\n###",
+            "\n\nExplanation:",
+            "\n\nThis query",
+        ]
+
+        result = response
+        for pattern in stop_patterns:
+            if pattern.lower() in result.lower():
+                idx = result.lower().find(pattern.lower())
+                result = result[:idx]
+
+        return result.strip()
 
     def extract_clarification_questions(self, response: str) -> List[str]:
         """

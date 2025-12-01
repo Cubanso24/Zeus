@@ -303,3 +303,65 @@ class SplunkQueryGenerator:
         ]
 
         return questions
+
+    def generate_explanation(
+        self,
+        query: str,
+        instruction: str,
+        max_new_tokens: int = 512,
+        temperature: float = 0.3,
+    ) -> str:
+        """
+        Generate an explanation for a Splunk query.
+
+        Args:
+            query: The generated Splunk query to explain
+            instruction: The original user instruction
+            max_new_tokens: Maximum tokens to generate
+            temperature: Sampling temperature
+
+        Returns:
+            Explanation of what the query does
+        """
+        explanation_prompt = f"""### Instruction:
+Explain this Splunk query in simple terms for a security analyst. Describe what the query does, what data it searches for, and what the results will show.
+
+Original request: {instruction}
+
+Splunk Query:
+{query}
+
+### Response:
+"""
+
+        # Tokenize
+        inputs = self.tokenizer(
+            explanation_prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=2048,
+        ).to(self.model.device)
+
+        # Generate
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=0.9,
+                do_sample=True,
+                repetition_penalty=1.2,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+
+        # Decode output
+        text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Extract only the response part
+        if "### Response:" in text:
+            explanation = text.split("### Response:")[-1].strip()
+        else:
+            explanation = text[len(explanation_prompt):].strip()
+
+        return explanation

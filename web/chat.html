@@ -396,6 +396,48 @@
             background: #218838;
         }
 
+        /* Query Explanation Styles */
+        .explanation-section {
+            margin-top: 15px;
+            padding: 12px;
+            background: #252538;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .explanation-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 13px;
+        }
+
+        .explanation-text {
+            color: #c0c0c0;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .explanation-toggle {
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .explanation-toggle:hover {
+            background: #667eea;
+            color: white;
+        }
+
         /* Feedback buttons */
         .feedback-container {
             margin-top: 10px;
@@ -919,8 +961,8 @@
 
                 const data = await response.json();
 
-                // Add assistant response
-                addMessage(data.query, 'assistant', data.is_clarification);
+                // Add assistant response with explanation
+                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation);
 
                 // Reload history to show the new query
                 loadHistory();
@@ -1035,7 +1077,7 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function addMessage(text, sender, isClarification = false, isError = false) {
+        function addMessage(text, sender, isClarification = false, isError = false, explanation = null) {
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
@@ -1052,10 +1094,26 @@
                 } else {
                     const queryId = 'query-' + Date.now();
                     const feedbackId = 'feedback-' + Date.now();
+                    const explanationId = 'explanation-' + Date.now();
+
+                    let explanationHtml = '';
+                    if (explanation) {
+                        explanationHtml = `
+                            <div class="explanation-section" id="${explanationId}">
+                                <div class="explanation-header">
+                                    <span>💡</span>
+                                    <span>Query Explanation</span>
+                                </div>
+                                <div class="explanation-text">${escapeHtml(explanation)}</div>
+                            </div>
+                        `;
+                    }
+
                     contentDiv.innerHTML = `
                         <p><strong>Generated Splunk Query:</strong></p>
                         <div class="query-code" id="${queryId}">${escapeHtml(text)}</div>
                         <button class="copy-btn" onclick="copyQueryOnly('${queryId}', this)">Copy Query</button>
+                        ${explanationHtml}
                         <div class="feedback-container" id="${feedbackId}" data-instruction="${escapeHtml(lastUserQuery)}" data-query-id="${queryId}">
                             <span style="font-size: 12px; color: #888;">Was this helpful?</span>
                             <button class="feedback-btn good" onclick="handleFeedback('${feedbackId}', 'good', this)" title="Good query">👍</button>

@@ -45,6 +45,7 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     """Response model for query generation."""
     query: str = Field(..., description="Generated Splunk query or clarification request")
+    explanation: Optional[str] = Field(None, description="Explanation of the generated query")
     is_clarification: bool = Field(..., description="Whether the response is a clarification request")
     clarification_questions: List[str] = Field(default=[], description="Extracted clarification questions if applicable")
     alternatives: List[str] = Field(default=[], description="Alternative query suggestions")
@@ -525,8 +526,20 @@ async def generate_query(
 
         # Extract clarification questions if applicable
         clarification_questions = []
+        explanation = None
         if is_clarification:
             clarification_questions = model.extract_clarification_questions(primary_query)
+        else:
+            # Generate explanation for the query
+            try:
+                explanation = model.generate_explanation(
+                    query=primary_query,
+                    instruction=request.instruction,
+                )
+                logger.info(f"Explanation generated for query")
+            except Exception as e:
+                logger.warning(f"Failed to generate explanation: {e}")
+                explanation = None
 
         # Alternative queries
         alternatives = queries[1:] if len(queries) > 1 else []
@@ -549,6 +562,7 @@ async def generate_query(
 
         return QueryResponse(
             query=primary_query,
+            explanation=explanation,
             is_clarification=is_clarification,
             clarification_questions=clarification_questions,
             alternatives=alternatives,

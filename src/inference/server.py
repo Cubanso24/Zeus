@@ -21,7 +21,12 @@ from loguru import logger
 import io
 
 from src.inference.model import SplunkQueryGenerator
-from src.database.database import get_db
+from src.inference.semantic_cache import (
+    SemanticCache,
+    initialize_semantic_cache,
+    get_semantic_cache,
+)
+from src.database.database import get_db, SessionLocal
 from src.database.models import User as DBUser, Query as DBQuery, Feedback as DBFeedback, TrainingJob as DBTrainingJob
 from src.database.auth import (
     verify_password,
@@ -51,6 +56,9 @@ class QueryResponse(BaseModel):
     clarification_questions: List[str] = Field(default=[], description="Extracted clarification questions if applicable")
     alternatives: List[str] = Field(default=[], description="Alternative query suggestions")
     query_id: Optional[int] = Field(None, description="Database ID of the saved query")
+    from_cache: bool = Field(default=False, description="Whether the result came from the approved query cache")
+    cache_similarity: Optional[float] = Field(None, description="Similarity score if from cache")
+    cache_note: Optional[str] = Field(None, description="Note about the cached result")
 
 
 class BatchQueryRequest(BaseModel):
@@ -380,8 +388,31 @@ async def admin_required(
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize model on startup."""
+    """Initialize model and semantic cache on startup."""
     logger.info("Starting Splunk Query LLM API server")
+
+    # Initialize semantic cache
+    try:
+        device = "cuda" if os.environ.get("DEVICE", "auto") == "cuda" else "cpu"
+        similarity_threshold = float(os.environ.get("CACHE_SIMILARITY_THRESHOLD", "0.85"))
+
+        cache = initialize_semantic_cache(
+            similarity_threshold=similarity_threshold,
+            device=device
+        )
+
+        if cache.is_available():
+            # Load approved queries into cache
+            db = SessionLocal()
+            try:
+                num_loaded = cache.load_approved_queries(db)
+                logger.info(f"Semantic cache initialized with {num_loaded} approved queries")
+            finally:
+                db.close()
+        else:
+            logger.warning("Semantic cache not available - sentence-transformers may not be installed")
+    except Exception as e:
+        logger.error(f"Failed to initialize semantic cache: {e}")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -515,13 +546,66 @@ async def generate_query(
     """
     Generate a Splunk query from natural language instruction.
 
-    Returns either a Splunk query or a clarification request if more information is needed.
+    First checks the semantic cache for similar approved queries.
+    If no match found, generates a new query using the LLM.
     Requires authentication and saves the query to the database.
     """
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     try:
+        # Check semantic cache first for similar approved queries
+        cache = get_semantic_cache()
+        cache_match = None
+        if cache and cache.is_available():
+            cache_match = cache.search(request.instruction)
+            if cache_match.found:
+                logger.info(f"Cache hit for query with similarity {cache_match.similarity_score:.3f}")
+
+                # Generate explanation for cached query
+                explanation = None
+                try:
+                    explanation = model.generate_explanation(
+                        query=cache_match.query,
+                        instruction=request.instruction,
+                        explanation_format=request.explanation_format,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to generate explanation for cached query: {e}")
+
+                # Build cache note
+                cache_note = "This query was previously approved by an analyst"
+                if cache_match.was_corrected:
+                    cache_note += " (with corrections)"
+                cache_note += f" - {cache_match.similarity_score*100:.0f}% match"
+
+                # Save to query history (mark as from cache)
+                db_query = DBQuery(
+                    user_id=current_user.id,
+                    instruction=request.instruction,
+                    input_text=request.input,
+                    generated_query=cache_match.query,
+                    is_clarification=False,
+                    alternatives=None,
+                    temperature=request.temperature,
+                )
+                db.add(db_query)
+                db.commit()
+                db.refresh(db_query)
+
+                return QueryResponse(
+                    query=cache_match.query,
+                    explanation=explanation,
+                    is_clarification=False,
+                    clarification_questions=[],
+                    alternatives=[],
+                    query_id=db_query.id,
+                    from_cache=True,
+                    cache_similarity=round(cache_match.similarity_score, 3),
+                    cache_note=cache_note,
+                )
+
+        # No cache hit - generate new query
         # System prompt to constrain model to use valid Splunk indexes
         system_prompt = """You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
 
@@ -740,7 +824,7 @@ async def submit_feedback(
         with open(feedback_file, 'a') as f:
             f.write(json.dumps(feedback_entry) + '\n')
 
-        # If rating is good, also save to approved training data
+        # If rating is good, also save to approved training data and add to semantic cache
         if feedback.rating == "good":
             approved_file = os.path.join(feedback_dir, "approved_training.jsonl")
             training_entry = {
@@ -750,6 +834,24 @@ async def submit_feedback(
             }
             with open(approved_file, 'a') as f:
                 f.write(json.dumps(training_entry) + '\n')
+
+            # Add to semantic cache for future lookups
+            cache = get_semantic_cache()
+            if cache and cache.is_available() and query_record:
+                cache.add_to_cache(
+                    query_id=query_record.id,
+                    instruction=feedback.instruction,
+                    generated_query=feedback.generated_query,
+                    user_id=current_user.id,
+                    corrected_query=feedback.corrected_query
+                )
+                logger.info(f"Added query {query_record.id} to semantic cache")
+
+        # If rating is bad, remove from semantic cache if present
+        if feedback.rating == "bad" and query_record:
+            cache = get_semantic_cache()
+            if cache and cache.is_available():
+                cache.remove_from_cache(query_record.id)
 
         # If rating is bad and correction provided, save to corrections
         if feedback.rating == "bad" and feedback.corrected_query:

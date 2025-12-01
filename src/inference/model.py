@@ -407,17 +407,18 @@ class SplunkQueryGenerator:
         if index_match:
             index_name = index_match.group(1).strip('"\'')
             index_descriptions = {
+                'main': 'default index for most data',
+                '_internal': 'Splunk internal logs',
+                '_audit': 'Splunk audit logs',
+                'os': 'operating system logs (Linux/Windows)',
+                'wineventlog': 'Windows Event Logs',
+                'syslog': 'syslog data',
+                # Legacy mappings for backwards compatibility
                 'linux': 'Linux system logs',
                 'windows': 'Windows event logs',
                 'firewall': 'Firewall logs',
                 'network': 'Network traffic logs',
-                'web': 'Web server logs',
-                'proxy': 'Proxy server logs',
-                'dns': 'DNS query logs',
-                'auth': 'Authentication logs',
                 'security': 'Security event logs',
-                'syslog': 'Syslog messages',
-                'main': 'Main index (default)',
             }
             desc = index_descriptions.get(index_name.lower(), f'{index_name} data')
             input_parts.append(f"index: {index_name} ({desc})")

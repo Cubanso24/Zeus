@@ -508,10 +508,25 @@ async def generate_query(
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     try:
+        # System prompt to constrain model to use valid Splunk indexes
+        system_prompt = """You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
+
+IMPORTANT: Only use these standard Splunk indexes:
+- main (default index for most data)
+- _internal (Splunk internal logs)
+- _audit (Splunk audit logs)
+- os (operating system logs including Linux and Windows)
+- wineventlog (Windows Event Logs)
+- syslog (syslog data)
+
+Do NOT use custom indexes like 'linux', 'firewall', 'network', 'windows', 'security', etc.
+Use 'main' or 'os' for general system logs, and use sourcetype to filter specific log types."""
+
         # Generate query
         queries = model.generate(
             instruction=request.instruction,
             input_text=request.input,
+            system_prompt=system_prompt,
             max_new_tokens=request.max_new_tokens,
             temperature=request.temperature,
             top_p=request.top_p,

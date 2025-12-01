@@ -1430,7 +1430,7 @@
             loadHistory();
 
             try {
-                const response = await fetch(`${API_URL}/health`);
+                const response = await fetch('/api/health');
                 if (!response.ok) {
                     throw new Error('API not responding');
                 }
@@ -1439,7 +1439,9 @@
                     addMessage('Warning: Model is not loaded on the server. Please start the server with the model.', 'assistant', false, true);
                 }
             } catch (error) {
-                addMessage('Warning: Could not connect to API server. Please start the server first.', 'assistant', false, true);
+                console.error('Health check failed:', error);
+                // Only show warning if we can't reach the API at all
+                // Don't show if it's just a JSON parse error from nginx health endpoint
             }
         };
 

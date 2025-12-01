@@ -610,9 +610,11 @@ async def generate_query(
         cache = get_semantic_cache()
         cache_match = None
         if cache and cache.is_available():
+            logger.info(f"Searching cache for: {request.instruction}")
             cache_match = cache.search(request.instruction)
+            logger.info(f"Cache search result: found={cache_match.found}, score={cache_match.similarity_score:.3f}")
             if cache_match.found:
-                logger.info(f"Cache hit for query with similarity {cache_match.similarity_score:.3f}")
+                logger.info(f"Cache hit! Returning cached query instead of generating new one")
 
                 # Generate explanation for cached query
                 explanation = None

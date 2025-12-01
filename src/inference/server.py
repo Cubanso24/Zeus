@@ -447,6 +447,36 @@ async def cache_status():
     }
 
 
+@app.get("/cache/test")
+async def cache_test(instruction: str):
+    """Test cache search for debugging."""
+    from src.inference.semantic_cache import extract_time_param
+
+    cache = get_semantic_cache()
+    if cache is None:
+        return {"error": "Cache not initialized"}
+
+    if not cache.is_available():
+        return {"error": "Cache not available (sentence-transformers not loaded)"}
+
+    # Test the search
+    result = cache.search(instruction)
+
+    # Also test time extraction
+    user_time = extract_time_param(instruction)
+
+    return {
+        "instruction": instruction,
+        "extracted_time": user_time,
+        "cache_hit": result.found,
+        "similarity_score": result.similarity_score,
+        "matched_instruction": result.original_instruction if result.found else None,
+        "returned_query": result.query[:200] if result.query else None,
+        "params_modified": result.params_modified,
+        "modifications": result.modifications,
+    }
+
+
 # Authentication endpoints
 @app.post("/auth/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):

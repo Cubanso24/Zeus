@@ -907,18 +907,52 @@
         }
 
         function copyToClipboard(text, btnElement) {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btnElement.textContent;
-                btnElement.textContent = '✓ Copied!';
-                btnElement.style.background = '#218838';
-                setTimeout(() => {
-                    btnElement.textContent = originalText;
-                    btnElement.style.background = '#667eea';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
+            // Try modern clipboard API first, fall back to execCommand
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccessHistory(btnElement);
+                }).catch(err => {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopyText(text, btnElement);
+                });
+            } else {
+                fallbackCopyText(text, btnElement);
+            }
+        }
+
+        function fallbackCopyText(text, btnElement) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccessHistory(btnElement);
+                } else {
+                    alert('Failed to copy query');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
                 alert('Failed to copy query');
-            });
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccessHistory(btnElement) {
+            const originalText = btnElement.textContent;
+            btnElement.textContent = '✓ Copied!';
+            btnElement.style.background = '#218838';
+            setTimeout(() => {
+                btnElement.textContent = originalText;
+                btnElement.style.background = '#667eea';
+            }, 2000);
         }
 
         function handleKeyPress(event) {
@@ -1218,18 +1252,53 @@
             const element = document.getElementById(elementId);
             const text = element.textContent;
 
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btnElement.textContent;
-                btnElement.textContent = '✓ Copied!';
-                btnElement.style.background = '#218838';
-                setTimeout(() => {
-                    btnElement.textContent = originalText;
-                    btnElement.style.background = '#28a745';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
+            // Try modern clipboard API first, fall back to execCommand
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(btnElement);
+                }).catch(err => {
+                    console.error('Clipboard API failed:', err);
+                    fallbackCopy(text, btnElement);
+                });
+            } else {
+                fallbackCopy(text, btnElement);
+            }
+        }
+
+        function fallbackCopy(text, btnElement) {
+            // Create temporary textarea for copying
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(btnElement);
+                } else {
+                    alert('Failed to copy query');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
                 alert('Failed to copy query');
-            });
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess(btnElement) {
+            const originalText = btnElement.textContent;
+            btnElement.textContent = '✓ Copied!';
+            btnElement.style.background = '#218838';
+            setTimeout(() => {
+                btnElement.textContent = originalText;
+                btnElement.style.background = '#28a745';
+            }, 2000);
         }
 
         function handleFeedback(feedbackId, rating, btnElement) {

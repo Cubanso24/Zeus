@@ -372,79 +372,208 @@ class SplunkQueryGenerator:
         temperature: float = 0.3,
     ) -> str:
         """
-        Generate an explanation for a Splunk query.
+        Generate an explanation for a Splunk query using rule-based parsing.
 
         Args:
             query: The generated Splunk query to explain
             instruction: The original user instruction
-            max_new_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
+            max_new_tokens: Unused, kept for API compatibility
+            temperature: Unused, kept for API compatibility
 
         Returns:
             Explanation of what the query does
         """
-        explanation_prompt = f"""### Instruction:
-You are explaining a Splunk query to a security analyst. Analyze the SPECIFIC query below and explain what it does.
+        return self._parse_query_explanation(query, instruction)
 
-The user asked: {instruction}
+    def _parse_query_explanation(self, query: str, instruction: str) -> str:
+        """
+        Parse a Splunk query and generate a human-readable explanation.
 
-The generated Splunk query is:
-{query}
+        Args:
+            query: The Splunk query to explain
+            instruction: The original user request
 
-Provide your explanation in this format:
-1. Start with a one-sentence summary of what this specific query does
-2. Then "### Input:" section - list each component of THIS query (index, sourcetype, filters, time range if any)
-3. Then "### Output:" section - describe what fields/results THIS query will return
+        Returns:
+            Structured explanation of the query
+        """
+        import re
 
-Be specific to the actual query provided. Do not make up a different query.
+        # Initialize components
+        input_parts = []
+        output_parts = []
 
-### Response:
-"""
+        # Extract index
+        index_match = re.search(r'index=(\S+)', query)
+        if index_match:
+            index_name = index_match.group(1).strip('"\'')
+            index_descriptions = {
+                'linux': 'Linux system logs',
+                'windows': 'Windows event logs',
+                'firewall': 'Firewall logs',
+                'network': 'Network traffic logs',
+                'web': 'Web server logs',
+                'proxy': 'Proxy server logs',
+                'dns': 'DNS query logs',
+                'auth': 'Authentication logs',
+                'security': 'Security event logs',
+                'syslog': 'Syslog messages',
+                'main': 'Main index (default)',
+            }
+            desc = index_descriptions.get(index_name.lower(), f'{index_name} data')
+            input_parts.append(f"index: {index_name} ({desc})")
 
-        # Tokenize
-        inputs = self.tokenizer(
-            explanation_prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=2048,
-        ).to(self.model.device)
+        # Extract sourcetype
+        sourcetype_match = re.search(r'sourcetype=(\S+)', query)
+        if sourcetype_match:
+            sourcetype = sourcetype_match.group(1).strip('"\'')
+            sourcetype_descriptions = {
+                'linux_secure': 'Linux authentication/security logs',
+                'linux_audit': 'Linux audit logs',
+                'WinEventLog:Security': 'Windows Security Event Log',
+                'WinEventLog:System': 'Windows System Event Log',
+                'access_combined': 'Apache/Nginx access logs',
+                'syslog': 'Syslog messages',
+                'cisco:asa': 'Cisco ASA firewall logs',
+                'pan:traffic': 'Palo Alto traffic logs',
+            }
+            desc = sourcetype_descriptions.get(sourcetype, f'{sourcetype} log format')
+            input_parts.append(f"sourcetype: {sourcetype} ({desc})")
 
-        # Generate
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                temperature=temperature,
-                top_p=0.9,
-                do_sample=True,
-                repetition_penalty=1.2,
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-            )
+        # Extract action/status filters
+        action_match = re.search(r'action=(\S+)', query)
+        if action_match:
+            action = action_match.group(1).strip('"\'')
+            input_parts.append(f"action filter: {action}")
 
-        # Decode output
-        text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        status_match = re.search(r'status=(\S+)', query)
+        if status_match:
+            status = status_match.group(1).strip('"\'')
+            input_parts.append(f"status filter: {status}")
 
-        # Extract only the response part
-        if "### Response:" in text:
-            explanation = text.split("### Response:")[-1].strip()
-        else:
-            explanation = text[len(explanation_prompt):].strip()
+        # Extract search terms (quoted strings)
+        search_terms = re.findall(r'"([^"]+)"', query)
+        if search_terms:
+            for term in search_terms[:3]:  # Limit to first 3
+                input_parts.append(f'search term: "{term}"')
 
-        # Validate the explanation - if it looks like a query (starts with index=),
-        # the model failed to generate a proper explanation
-        if explanation.strip().startswith("index="):
-            logger.warning("Explanation generation returned a query instead of explanation")
-            return None
-
-        # Clean up the explanation - remove any trailing query-like content
-        lines = explanation.split('\n')
-        cleaned_lines = []
-        for line in lines:
-            # Stop if we hit a line that looks like a Splunk query
-            stripped = line.strip()
-            if stripped.startswith("index=") or stripped.startswith("| "):
+        # Extract time range
+        time_patterns = [
+            (r'earliest=(-?\d+[hdwm]@?\w*)', 'time range'),
+            (r'latest=(\S+)', 'end time'),
+            (r'_time\s*[<>=]+\s*(\S+)', 'time filter'),
+        ]
+        for pattern, label in time_patterns:
+            match = re.search(pattern, query)
+            if match:
+                input_parts.append(f"{label}: {match.group(1)}")
                 break
-            cleaned_lines.append(line)
 
-        return '\n'.join(cleaned_lines).strip()
+        # Extract IP filters
+        ip_patterns = [
+            (r'src_ip=[\"\']?([^\s\"\']+)', 'source IP filter'),
+            (r'dest_ip=[\"\']?([^\s\"\']+)', 'destination IP filter'),
+            (r'src=[\"\']?([^\s\"\']+)', 'source filter'),
+            (r'dst=[\"\']?([^\s\"\']+)', 'destination filter'),
+        ]
+        for pattern, label in ip_patterns:
+            match = re.search(pattern, query)
+            if match:
+                input_parts.append(f"{label}: {match.group(1)}")
+
+        # Extract user filters
+        user_match = re.search(r'user=[\"\']?([^\s\"\']+)', query)
+        if user_match:
+            input_parts.append(f"user filter: {user_match.group(1)}")
+
+        # Analyze pipe commands for output
+        pipe_parts = query.split('|')
+
+        for part in pipe_parts[1:]:  # Skip the search part
+            part = part.strip()
+
+            # Stats command
+            if part.startswith('stats'):
+                stats_match = re.search(r'stats\s+(\w+)(?:\([^)]*\))?\s*(?:as\s+\w+)?\s*(?:by\s+(.+))?', part)
+                if stats_match:
+                    func = stats_match.group(1)
+                    by_fields = stats_match.group(2)
+                    if by_fields:
+                        output_parts.append(f"Calculates {func} grouped by: {by_fields.strip()}")
+                    else:
+                        output_parts.append(f"Calculates {func} of results")
+
+            # Table command
+            elif part.startswith('table'):
+                fields_match = re.search(r'table\s+(.+)', part)
+                if fields_match:
+                    fields = fields_match.group(1).strip()
+                    # Limit displayed fields if too many
+                    field_list = [f.strip() for f in fields.split(',')]
+                    if len(field_list) > 5:
+                        output_parts.append(f"Displays fields: {', '.join(field_list[:5])}... and {len(field_list)-5} more")
+                    else:
+                        output_parts.append(f"Displays fields: {fields}")
+
+            # Sort command
+            elif part.startswith('sort'):
+                sort_match = re.search(r'sort\s+(-?)(\S+)', part)
+                if sort_match:
+                    direction = 'descending' if sort_match.group(1) == '-' else 'ascending'
+                    field = sort_match.group(2)
+                    output_parts.append(f"Sorted by {field} ({direction})")
+
+            # Head/tail command
+            elif part.startswith('head'):
+                head_match = re.search(r'head\s+(\d+)', part)
+                if head_match:
+                    output_parts.append(f"Limited to top {head_match.group(1)} results")
+
+            elif part.startswith('tail'):
+                tail_match = re.search(r'tail\s+(\d+)', part)
+                if tail_match:
+                    output_parts.append(f"Shows last {tail_match.group(1)} results")
+
+            # Timechart
+            elif part.startswith('timechart'):
+                output_parts.append("Creates a time-based chart of results")
+
+            # Dedup
+            elif part.startswith('dedup'):
+                dedup_match = re.search(r'dedup\s+(.+)', part)
+                if dedup_match:
+                    output_parts.append(f"Removes duplicates based on: {dedup_match.group(1).strip()}")
+
+            # Where clause
+            elif part.startswith('where'):
+                output_parts.append("Applies additional filtering conditions")
+
+            # Eval
+            elif part.startswith('eval'):
+                output_parts.append("Calculates/transforms field values")
+
+            # Rex (regex extraction)
+            elif part.startswith('rex'):
+                output_parts.append("Extracts fields using regex patterns")
+
+        # Generate summary based on instruction
+        summary = f"This query searches for {instruction.lower().rstrip('.')}."
+
+        # Build the explanation
+        explanation_parts = [summary, "", "### Input:"]
+
+        if input_parts:
+            for part in input_parts:
+                explanation_parts.append(f"- {part}")
+        else:
+            explanation_parts.append("- Searches across available data")
+
+        explanation_parts.append("")
+        explanation_parts.append("### Output:")
+
+        if output_parts:
+            for part in output_parts:
+                explanation_parts.append(f"- {part}")
+        else:
+            explanation_parts.append("- Returns matching raw events")
+
+        return '\n'.join(explanation_parts)

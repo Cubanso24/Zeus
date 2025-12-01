@@ -384,31 +384,19 @@ class SplunkQueryGenerator:
             Explanation of what the query does
         """
         explanation_prompt = f"""### Instruction:
-Explain this Splunk query for a security analyst using the exact format below. Be concise and specific.
+You are explaining a Splunk query to a security analyst. Analyze the SPECIFIC query below and explain what it does.
 
-Original request: {instruction}
+The user asked: {instruction}
 
-Splunk Query:
+The generated Splunk query is:
 {query}
 
-Provide the explanation in this exact format:
-1. First, a one-sentence summary of what the query does
-2. Then an "### Input:" section listing each component (index, sourcetype, search terms, time range, etc.)
-3. Then an "### Output:" section describing what results will be displayed
+Provide your explanation in this format:
+1. Start with a one-sentence summary of what this specific query does
+2. Then "### Input:" section - list each component of THIS query (index, sourcetype, filters, time range if any)
+3. Then "### Output:" section - describe what fields/results THIS query will return
 
-Example format:
-Show me all failed SSH logins from the last 24 hours, sorted by frequency with the top 10 IPs/users.
-
-### Input:
-- index: linux (operating system logs)
-- sourcetype: linux_secure (authentication logs)
-- search term: "Failed password" (failed login attempts)
-- time range: last 24 hours
-
-### Output:
-- Count of failed attempts grouped by source IP and username
-- Sorted by frequency, showing top 10 results
-- Displays timestamp, source IP, username, and count
+Be specific to the actual query provided. Do not make up a different query.
 
 ### Response:
 """
@@ -443,4 +431,20 @@ Show me all failed SSH logins from the last 24 hours, sorted by frequency with t
         else:
             explanation = text[len(explanation_prompt):].strip()
 
-        return explanation
+        # Validate the explanation - if it looks like a query (starts with index=),
+        # the model failed to generate a proper explanation
+        if explanation.strip().startswith("index="):
+            logger.warning("Explanation generation returned a query instead of explanation")
+            return None
+
+        # Clean up the explanation - remove any trailing query-like content
+        lines = explanation.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            # Stop if we hit a line that looks like a Splunk query
+            stripped = line.strip()
+            if stripped.startswith("index=") or stripped.startswith("| "):
+                break
+            cleaned_lines.append(line)
+
+        return '\n'.join(cleaned_lines).strip()

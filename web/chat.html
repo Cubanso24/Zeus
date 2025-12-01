@@ -399,7 +399,7 @@
         /* Query Explanation Styles */
         .explanation-section {
             margin-top: 15px;
-            padding: 12px;
+            padding: 12px 15px;
             background: #252538;
             border-radius: 8px;
             border-left: 3px solid #667eea;
@@ -409,7 +409,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
             color: #667eea;
             font-size: 13px;
@@ -418,8 +418,31 @@
         .explanation-text {
             color: #c0c0c0;
             font-size: 13px;
-            line-height: 1.6;
-            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .explanation-text .summary {
+            margin-bottom: 12px;
+            color: #e0e0e0;
+        }
+
+        .explanation-text .section-header {
+            font-weight: 600;
+            color: #667eea;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .explanation-text ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .explanation-text li {
+            margin-bottom: 4px;
         }
 
         .explanation-toggle {
@@ -1104,7 +1127,7 @@
                                     <span>💡</span>
                                     <span>Query Explanation</span>
                                 </div>
-                                <div class="explanation-text">${escapeHtml(explanation)}</div>
+                                <div class="explanation-text">${formatExplanation(explanation)}</div>
                             </div>
                         `;
                     }
@@ -1134,6 +1157,71 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatExplanation(text) {
+            // Escape HTML first
+            let html = escapeHtml(text);
+
+            // Split into lines
+            const lines = html.split('\n');
+            let result = [];
+            let inList = false;
+            let summary = [];
+            let foundSection = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                // Check for section headers (### Input: or ### Output:)
+                if (line.match(/^###?\s*(Input|Output):/i)) {
+                    // Close any open list
+                    if (inList) {
+                        result.push('</ul>');
+                        inList = false;
+                    }
+                    // Add summary if we have it and this is first section
+                    if (!foundSection && summary.length > 0) {
+                        result.push(`<div class="summary">${summary.join(' ')}</div>`);
+                    }
+                    foundSection = true;
+
+                    const sectionName = line.replace(/^###?\s*/i, '').replace(/:.*$/, '');
+                    result.push(`<div class="section-header">${sectionName}</div>`);
+                    result.push('<ul>');
+                    inList = true;
+                }
+                // Check for bullet points
+                else if (line.startsWith('-') || line.startsWith('•')) {
+                    if (!inList) {
+                        result.push('<ul>');
+                        inList = true;
+                    }
+                    const bulletContent = line.replace(/^[-•]\s*/, '');
+                    result.push(`<li>${bulletContent}</li>`);
+                }
+                // Regular text - either summary or continuation
+                else if (line.length > 0) {
+                    if (!foundSection) {
+                        summary.push(line);
+                    } else if (inList) {
+                        // Continuation of previous bullet point or loose text
+                        result.push(`<li>${line}</li>`);
+                    }
+                }
+            }
+
+            // Close any open list
+            if (inList) {
+                result.push('</ul>');
+            }
+
+            // If no sections were found, just return the escaped text with summary styling
+            if (!foundSection) {
+                return `<div class="summary">${summary.join('<br>')}</div>`;
+            }
+
+            return result.join('\n');
         }
 
         function copyQueryOnly(elementId, btnElement) {

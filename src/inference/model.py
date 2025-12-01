@@ -324,12 +324,31 @@ class SplunkQueryGenerator:
             Explanation of what the query does
         """
         explanation_prompt = f"""### Instruction:
-Explain this Splunk query in simple terms for a security analyst. Describe what the query does, what data it searches for, and what the results will show.
+Explain this Splunk query for a security analyst using the exact format below. Be concise and specific.
 
 Original request: {instruction}
 
 Splunk Query:
 {query}
+
+Provide the explanation in this exact format:
+1. First, a one-sentence summary of what the query does
+2. Then an "### Input:" section listing each component (index, sourcetype, search terms, time range, etc.)
+3. Then an "### Output:" section describing what results will be displayed
+
+Example format:
+Show me all failed SSH logins from the last 24 hours, sorted by frequency with the top 10 IPs/users.
+
+### Input:
+- index: linux (operating system logs)
+- sourcetype: linux_secure (authentication logs)
+- search term: "Failed password" (failed login attempts)
+- time range: last 24 hours
+
+### Output:
+- Count of failed attempts grouped by source IP and username
+- Sorted by frequency, showing top 10 results
+- Displays timestamp, source IP, username, and count
 
 ### Response:
 """

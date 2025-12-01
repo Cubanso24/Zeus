@@ -556,6 +556,32 @@
             margin-left: 8px;
         }
 
+        .cache-modifications {
+            background: #1d3a2d;
+            border: 1px solid #28a745;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .cache-mod-label {
+            color: #8fdf9f;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .cache-modifications ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #b8e6c1;
+        }
+
+        .cache-modifications li {
+            margin-bottom: 2px;
+        }
+
         /* Alternatives Grid */
         .alternatives-container {
             display: grid;
@@ -1071,7 +1097,9 @@
                 const cacheInfo = data.from_cache ? {
                     from_cache: data.from_cache,
                     cache_similarity: data.cache_similarity,
-                    cache_note: data.cache_note
+                    cache_note: data.cache_note,
+                    cache_params_modified: data.cache_params_modified,
+                    cache_modifications: data.cache_modifications
                 } : null;
 
                 // Add assistant response with explanation and cache info
@@ -1218,13 +1246,29 @@
                     let cacheHtml = '';
                     if (cacheInfo && cacheInfo.from_cache) {
                         const similarityPercent = Math.round((cacheInfo.cache_similarity || 0) * 100);
+                        let badgeText = 'Approved Query Match';
+                        if (cacheInfo.cache_params_modified) {
+                            badgeText = 'Approved Query (Adjusted)';
+                        }
+
+                        // Build modifications list if any
+                        let modificationsHtml = '';
+                        if (cacheInfo.cache_modifications && cacheInfo.cache_modifications.length > 0) {
+                            modificationsHtml = `
+                                <div class="cache-modifications">
+                                    <span class="cache-mod-label">Adjustments made:</span>
+                                    <ul>${cacheInfo.cache_modifications.map(m => `<li>${escapeHtml(m)}</li>`).join('')}</ul>
+                                </div>
+                            `;
+                        }
+
                         cacheHtml = `
                             <div class="cache-badge">
-                                <span class="cache-badge-icon">✓</span>
-                                <span>Approved Query Match</span>
+                                <span class="cache-badge-icon">${cacheInfo.cache_params_modified ? '⚡' : '✓'}</span>
+                                <span>${badgeText}</span>
                                 <span class="cache-similarity">${similarityPercent}% similar</span>
                             </div>
-                            ${cacheInfo.cache_note ? `<div class="cache-note">${escapeHtml(cacheInfo.cache_note)}</div>` : ''}
+                            ${modificationsHtml}
                         `;
                     }
 

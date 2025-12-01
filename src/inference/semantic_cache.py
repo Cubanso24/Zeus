@@ -4,10 +4,149 @@ Uses sentence embeddings to find semantically similar questions
 and return previously approved queries instead of generating new ones.
 """
 
+import re
 import numpy as np
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from dataclasses import dataclass
 from loguru import logger
+
+
+# Time parameter patterns for extraction and substitution
+TIME_PATTERNS = {
+    # Pattern to match various time expressions in natural language
+    'hours': r'(?:last|past)?\s*(\d+)\s*hours?',
+    'days': r'(?:last|past)?\s*(\d+)\s*days?',
+    'minutes': r'(?:last|past)?\s*(\d+)\s*minutes?',
+    'weeks': r'(?:last|past)?\s*(\d+)\s*weeks?',
+    'months': r'(?:last|past)?\s*(\d+)\s*months?',
+    # Also match "last day", "last hour" etc (singular without number)
+    'last_day': r'(?:last|past)\s+day',
+    'last_hour': r'(?:last|past)\s+hour',
+    'last_week': r'(?:last|past)\s+week',
+    'last_month': r'(?:last|past)\s+month',
+}
+
+# Splunk time format pattern in queries
+SPLUNK_TIME_PATTERN = r'earliest=-(\d+)([hdwm])'
+
+
+def extract_time_param(instruction: str) -> Optional[str]:
+    """
+    Extract time parameter from a natural language instruction.
+
+    Args:
+        instruction: The user's instruction
+
+    Returns:
+        Splunk-formatted time string (e.g., '-24h', '-7d') or None
+    """
+    instruction_lower = instruction.lower()
+
+    # Check for specific hour mentions
+    hours_match = re.search(TIME_PATTERNS['hours'], instruction_lower)
+    if hours_match:
+        return f"-{hours_match.group(1)}h"
+
+    # Check for specific day mentions
+    days_match = re.search(TIME_PATTERNS['days'], instruction_lower)
+    if days_match:
+        return f"-{days_match.group(1)}d"
+
+    # Check for specific minute mentions
+    minutes_match = re.search(TIME_PATTERNS['minutes'], instruction_lower)
+    if minutes_match:
+        return f"-{minutes_match.group(1)}m"
+
+    # Check for specific week mentions
+    weeks_match = re.search(TIME_PATTERNS['weeks'], instruction_lower)
+    if weeks_match:
+        return f"-{weeks_match.group(1)}w"
+
+    # Check for specific month mentions
+    months_match = re.search(TIME_PATTERNS['months'], instruction_lower)
+    if months_match:
+        return f"-{months_match.group(1)}mon"
+
+    # Check for "last day/hour/week/month" (singular)
+    if re.search(TIME_PATTERNS['last_day'], instruction_lower):
+        return "-1d"
+    if re.search(TIME_PATTERNS['last_hour'], instruction_lower):
+        return "-1h"
+    if re.search(TIME_PATTERNS['last_week'], instruction_lower):
+        return "-1w"
+    if re.search(TIME_PATTERNS['last_month'], instruction_lower):
+        return "-1mon"
+
+    return None
+
+
+def substitute_time_param(query: str, new_time: str) -> str:
+    """
+    Substitute the time parameter in a Splunk query.
+
+    Args:
+        query: The Splunk query
+        new_time: The new time parameter (e.g., '-48h')
+
+    Returns:
+        Query with updated time parameter
+    """
+    # Remove the leading dash for the replacement
+    time_value = new_time.lstrip('-')
+
+    # Replace earliest=-XXX pattern
+    updated = re.sub(r'earliest=-\S+', f'earliest=-{time_value}', query)
+
+    return updated
+
+
+def extract_count_param(instruction: str) -> Optional[int]:
+    """
+    Extract count/limit parameter from instruction.
+
+    Args:
+        instruction: The user's instruction
+
+    Returns:
+        Count value or None
+    """
+    instruction_lower = instruction.lower()
+
+    # Match patterns like "top 10", "first 5", "limit 20"
+    patterns = [
+        r'top\s+(\d+)',
+        r'first\s+(\d+)',
+        r'limit\s+(\d+)',
+        r'(\d+)\s+results?',
+        r'show\s+(\d+)',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, instruction_lower)
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
+def substitute_count_param(query: str, new_count: int) -> str:
+    """
+    Substitute count/limit parameters in a Splunk query.
+
+    Args:
+        query: The Splunk query
+        new_count: The new count value
+
+    Returns:
+        Query with updated count
+    """
+    # Replace head X pattern
+    updated = re.sub(r'\|\s*head\s+\d+', f'| head {new_count}', query)
+
+    # Replace limit=X pattern
+    updated = re.sub(r'limit=\d+', f'limit={new_count}', updated)
+
+    return updated
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -37,6 +176,8 @@ class CacheMatch:
     similarity_score: float = 0.0
     query_id: Optional[int] = None
     was_corrected: bool = False
+    params_modified: bool = False  # True if parameters were adjusted
+    modifications: Optional[List[str]] = None  # List of modifications made
 
 
 class SemanticCache:
@@ -178,13 +319,42 @@ class SemanticCache:
             if best_score >= self.similarity_threshold:
                 cached = self.cache[best_idx]
                 logger.info(f"Cache hit! Score: {best_score:.3f}, Query ID: {cached.query_id}")
+
+                # Apply parameter substitutions based on user's instruction
+                final_query = cached.generated_query
+                modifications = []
+
+                # Extract and substitute time parameter
+                user_time = extract_time_param(instruction)
+                cached_time = extract_time_param(cached.instruction)
+
+                if user_time and user_time != cached_time:
+                    old_query = final_query
+                    final_query = substitute_time_param(final_query, user_time)
+                    if final_query != old_query:
+                        modifications.append(f"Time range updated to {user_time}")
+                        logger.info(f"Substituted time parameter: {cached_time} -> {user_time}")
+
+                # Extract and substitute count parameter
+                user_count = extract_count_param(instruction)
+                cached_count = extract_count_param(cached.instruction)
+
+                if user_count and user_count != cached_count:
+                    old_query = final_query
+                    final_query = substitute_count_param(final_query, user_count)
+                    if final_query != old_query:
+                        modifications.append(f"Result limit updated to {user_count}")
+                        logger.info(f"Substituted count parameter: {cached_count} -> {user_count}")
+
                 return CacheMatch(
                     found=True,
-                    query=cached.generated_query,
+                    query=final_query,
                     original_instruction=cached.instruction,
                     similarity_score=float(best_score),
                     query_id=cached.query_id,
-                    was_corrected=cached.corrected_query is not None
+                    was_corrected=cached.corrected_query is not None,
+                    params_modified=len(modifications) > 0,
+                    modifications=modifications if modifications else None
                 )
 
             return CacheMatch(found=False, similarity_score=float(best_score))

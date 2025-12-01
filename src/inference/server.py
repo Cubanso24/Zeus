@@ -59,6 +59,8 @@ class QueryResponse(BaseModel):
     from_cache: bool = Field(default=False, description="Whether the result came from the approved query cache")
     cache_similarity: Optional[float] = Field(None, description="Similarity score if from cache")
     cache_note: Optional[str] = Field(None, description="Note about the cached result")
+    cache_params_modified: bool = Field(default=False, description="Whether parameters were adjusted for the cached query")
+    cache_modifications: Optional[List[str]] = Field(None, description="List of parameter modifications made")
 
 
 class BatchQueryRequest(BaseModel):
@@ -578,6 +580,8 @@ async def generate_query(
                 if cache_match.was_corrected:
                     cache_note += " (with corrections)"
                 cache_note += f" - {cache_match.similarity_score*100:.0f}% match"
+                if cache_match.params_modified and cache_match.modifications:
+                    cache_note += ". Parameters adjusted: " + ", ".join(cache_match.modifications)
 
                 # Save to query history (mark as from cache)
                 db_query = DBQuery(
@@ -603,6 +607,8 @@ async def generate_query(
                     from_cache=True,
                     cache_similarity=round(cache_match.similarity_score, 3),
                     cache_note=cache_note,
+                    cache_params_modified=cache_match.params_modified,
+                    cache_modifications=cache_match.modifications,
                 )
 
         # No cache hit - generate new query

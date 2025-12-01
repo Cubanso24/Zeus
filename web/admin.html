@@ -294,6 +294,14 @@
                 </div>
             </div>
 
+            <!-- GPU Stats -->
+            <div id="gpu-stats-section" class="mb-8" style="display: none;">
+                <h3 class="text-lg font-semibold mb-4">GPU Utilization</h3>
+                <div id="gpu-stats-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- GPU cards will be inserted here -->
+                </div>
+            </div>
+
             <!-- Metrics Table -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold mb-4">System Metrics</h3>
@@ -772,6 +780,54 @@
                     const days = Math.floor(stats.uptime_seconds / 86400);
                     const hours = Math.floor((stats.uptime_seconds % 86400) / 3600);
                     document.getElementById('system-uptime').textContent = `${days}d ${hours}h`;
+
+                    // GPU Stats
+                    const gpuSection = document.getElementById('gpu-stats-section');
+                    const gpuContainer = document.getElementById('gpu-stats-container');
+
+                    if (stats.gpu_available && stats.gpus && stats.gpus.length > 0) {
+                        gpuSection.style.display = 'block';
+                        gpuContainer.innerHTML = stats.gpus.map(gpu => {
+                            const memUsedGB = (gpu.memory_used / 1024 / 1024 / 1024).toFixed(1);
+                            const memTotalGB = (gpu.memory_total / 1024 / 1024 / 1024).toFixed(1);
+                            const utilizationColor = gpu.utilization > 80 ? 'bg-red-600' : gpu.utilization > 50 ? 'bg-yellow-500' : 'bg-green-600';
+                            const memColor = gpu.memory_percent > 80 ? 'bg-red-600' : gpu.memory_percent > 50 ? 'bg-yellow-500' : 'bg-green-600';
+
+                            return `
+                                <div class="bg-white rounded-lg shadow p-6">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <div class="text-gray-500 text-sm font-medium">GPU ${gpu.index}</div>
+                                            <div class="text-lg font-semibold">${gpu.name}</div>
+                                        </div>
+                                        ${gpu.temperature ? `<div class="text-sm text-gray-600">${gpu.temperature}°C</div>` : ''}
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="text-gray-600">Utilization</span>
+                                            <span class="font-semibold">${gpu.utilization}%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3">
+                                            <div class="${utilizationColor} h-3 rounded-full transition-all" style="width: ${gpu.utilization}%"></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="text-gray-600">Memory</span>
+                                            <span class="font-semibold">${memUsedGB} / ${memTotalGB} GB (${gpu.memory_percent}%)</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3">
+                                            <div class="${memColor} h-3 rounded-full transition-all" style="width: ${gpu.memory_percent}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        gpuSection.style.display = 'none';
+                    }
                 }
 
                 // Load metrics

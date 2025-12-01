@@ -227,6 +227,17 @@ class FeedbackUpdateRequest(BaseModel):
     comment: Optional[str] = None
 
 
+class GPUStats(BaseModel):
+    """GPU statistics."""
+    index: int
+    name: str
+    memory_total: int
+    memory_used: int
+    memory_percent: float
+    utilization: float
+    temperature: Optional[float] = None
+
+
 class SystemStatsResponse(BaseModel):
     """System statistics response."""
     cpu_percent: float
@@ -237,6 +248,8 @@ class SystemStatsResponse(BaseModel):
     disk_used: int
     disk_percent: float
     uptime_seconds: float
+    gpu_available: bool = False
+    gpus: List[GPUStats] = []
 
 
 class SystemMetricsResponse(BaseModel):
@@ -1248,7 +1261,7 @@ async def get_system_stats(
     admin_user: DBUser = Depends(admin_required),
 ):
     """
-    Get system statistics (CPU, RAM, disk usage).
+    Get system statistics (CPU, RAM, disk usage, GPU).
 
     Requires admin privileges.
     """
@@ -1272,6 +1285,40 @@ async def get_system_stats(
         boot_time = psutil.boot_time()
         uptime_seconds = datetime.now().timestamp() - boot_time
 
+        # GPU stats
+        gpu_available = False
+        gpus = []
+        try:
+            import subprocess
+            # Use nvidia-smi to get GPU stats
+            result = subprocess.run(
+                ['nvidia-smi', '--query-gpu=index,name,memory.total,memory.used,utilization.gpu,temperature.gpu',
+                 '--format=csv,noheader,nounits'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                gpu_available = True
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        parts = [p.strip() for p in line.split(',')]
+                        if len(parts) >= 6:
+                            mem_total = int(parts[2]) * 1024 * 1024  # Convert MB to bytes
+                            mem_used = int(parts[3]) * 1024 * 1024
+                            mem_percent = (mem_used / mem_total * 100) if mem_total > 0 else 0
+                            gpus.append(GPUStats(
+                                index=int(parts[0]),
+                                name=parts[1],
+                                memory_total=mem_total,
+                                memory_used=mem_used,
+                                memory_percent=round(mem_percent, 1),
+                                utilization=float(parts[4]),
+                                temperature=float(parts[5]) if parts[5] else None,
+                            ))
+        except (FileNotFoundError, subprocess.TimeoutExpired, Exception) as gpu_err:
+            logger.debug(f"GPU stats not available: {gpu_err}")
+
         return SystemStatsResponse(
             cpu_percent=round(cpu_percent, 1),
             memory_total=memory_total,
@@ -1281,6 +1328,8 @@ async def get_system_stats(
             disk_used=disk_used,
             disk_percent=round(disk_percent, 1),
             uptime_seconds=round(uptime_seconds, 0),
+            gpu_available=gpu_available,
+            gpus=gpus,
         )
 
     except Exception as e:

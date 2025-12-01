@@ -75,6 +75,30 @@
             margin-top: 4px;
         }
 
+        .history-search {
+            padding: 8px 10px;
+            border-bottom: 1px solid #3a3a4e;
+        }
+
+        .history-search input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a4e;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 12px;
+        }
+
+        .history-search input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .history-search input::placeholder {
+            color: #666;
+        }
+
         /* Explanation Format Toggle */
         .format-toggle {
             display: flex;
@@ -720,6 +744,9 @@
             <div class="history-header">
                 📜 Query History
             </div>
+            <div class="history-search">
+                <input type="text" id="historySearch" placeholder="Search history..." oninput="filterHistory()">
+            </div>
             <div class="history-list" id="historyList" style="flex: 1;">
                 <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>
             </div>
@@ -775,6 +802,7 @@
         let lastUserQuery = '';
         let currentAbortController = null;
         let explanationFormat = 'structured'; // 'structured' or 'paragraph'
+        let historyData = []; // Store history for filtering
 
         // Explanation format toggle
         function setExplanationFormat(format) {
@@ -808,7 +836,7 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/queries/history?page=1&page_size=50`, {
+                const response = await fetch(`${API_URL}/queries/history?page=1&page_size=100`, {
                     headers: getAuthHeaders()
                 });
 
@@ -817,53 +845,81 @@
                 }
 
                 const data = await response.json();
+                historyData = data.queries; // Store for filtering
 
-                if (data.queries.length === 0) {
-                    historyList.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>';
-                    return;
-                }
-
-                historyList.innerHTML = data.queries.map((item, index) => {
-                    const date = new Date(item.created_at);
-                    const timeStr = date.toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-
-                    const feedbackBadge = item.has_feedback
-                        ? `<span style="font-size: 10px; color: ${item.feedback_rating === 'good' ? '#28a745' : '#dc3545'};">${item.feedback_rating === 'good' ? '👍' : '👎'}</span>`
-                        : '';
-
-                    // Create unique ID for this history item
-                    const historyId = `history-${item.id}`;
-
-                    return `
-                        <div class="history-item" style="cursor: pointer;" onclick="toggleHistoryQuery('${historyId}')">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 500; margin-bottom: 2px;">
-                                        ${escapeHtml(item.instruction.substring(0, 60))}${item.instruction.length > 60 ? '...' : ''}
-                                    </div>
-                                    <div class="history-item-time">${timeStr} ${feedbackBadge}</div>
-                                </div>
-                                <span style="font-size: 12px; color: #667eea;">▼</span>
-                            </div>
-                            <div id="${historyId}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #3a3a4e;">
-                                <div style="font-size: 11px; color: #999; margin-bottom: 5px;">Generated Query:</div>
-                                <pre style="background: #1a1a2e; padding: 8px; border-radius: 5px; font-size: 11px; overflow-x: auto; margin: 0;">${escapeHtml(item.generated_query)}</pre>
-                                <button onclick="event.stopPropagation(); copyToClipboard('${escapeHtml(item.generated_query).replace(/'/g, "\\'")}', this)" style="margin-top: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Copy Query</button>
-                                <button onclick="event.stopPropagation(); setInput('${escapeHtml(item.instruction).replace(/'/g, "\\'")}'); document.getElementById('${historyId}').style.display = 'none';" style="margin-top: 8px; margin-left: 5px; padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Rerun</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                renderHistory(historyData);
 
             } catch (error) {
                 console.error('Error loading history:', error);
                 historyList.innerHTML = '<p style="text-align: center; color: #dc3545; font-size: 12px; margin-top: 20px;">Error loading history</p>';
             }
+        }
+
+        function renderHistory(queries) {
+            const historyList = document.getElementById('historyList');
+
+            if (queries.length === 0) {
+                const searchTerm = document.getElementById('historySearch')?.value;
+                if (searchTerm) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No matching queries found</p>';
+                } else {
+                    historyList.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>';
+                }
+                return;
+            }
+
+            historyList.innerHTML = queries.map((item, index) => {
+                const date = new Date(item.created_at);
+                const timeStr = date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const feedbackBadge = item.has_feedback
+                    ? `<span style="font-size: 10px; color: ${item.feedback_rating === 'good' ? '#28a745' : '#dc3545'};">${item.feedback_rating === 'good' ? '👍' : '👎'}</span>`
+                    : '';
+
+                // Create unique ID for this history item
+                const historyId = `history-${item.id}`;
+
+                return `
+                    <div class="history-item" style="cursor: pointer;" onclick="toggleHistoryQuery('${historyId}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500; margin-bottom: 2px;">
+                                    ${escapeHtml(item.instruction.substring(0, 60))}${item.instruction.length > 60 ? '...' : ''}
+                                </div>
+                                <div class="history-item-time">${timeStr} ${feedbackBadge}</div>
+                            </div>
+                            <span style="font-size: 12px; color: #667eea;">▼</span>
+                        </div>
+                        <div id="${historyId}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #3a3a4e;">
+                            <div style="font-size: 11px; color: #999; margin-bottom: 5px;">Generated Query:</div>
+                            <pre style="background: #1a1a2e; padding: 8px; border-radius: 5px; font-size: 11px; overflow-x: auto; margin: 0;">${escapeHtml(item.generated_query)}</pre>
+                            <button onclick="event.stopPropagation(); copyToClipboard('${escapeHtml(item.generated_query).replace(/'/g, "\\'")}', this)" style="margin-top: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Copy Query</button>
+                            <button onclick="event.stopPropagation(); setInput('${escapeHtml(item.instruction).replace(/'/g, "\\'")}'); document.getElementById('${historyId}').style.display = 'none';" style="margin-top: 8px; margin-left: 5px; padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">Rerun</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterHistory() {
+            const searchTerm = document.getElementById('historySearch').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                renderHistory(historyData);
+                return;
+            }
+
+            const filtered = historyData.filter(item => {
+                return item.instruction.toLowerCase().includes(searchTerm) ||
+                       item.generated_query.toLowerCase().includes(searchTerm);
+            });
+
+            renderHistory(filtered);
         }
 
         function setInput(text) {

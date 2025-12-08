@@ -11,6 +11,10 @@ Zeus is a fine-tuned Large Language Model that generates Splunk queries from nat
 - REST API for integrations
 - GPU-accelerated inference (CUDA support)
 - Horizontal scaling with load balancing
+- **Wazuh EDR Integration**: Specialized RAG (Retrieval Augmented Generation) for Wazuh alert queries with automatic field name translation
+- **Semantic Cache**: Learns from approved queries to serve similar requests instantly
+- **Index Selector**: UI support for targeting specific indexes (wazuh-alerts, security, etc.)
+- **Feedback Learning**: Bad queries with corrections are cached and used for future similar requests
 
 ## Quick Start
 
@@ -351,7 +355,7 @@ Zeus/
 ├── src/
 │   ├── data_preparation/  # Data processing
 │   ├── training/          # Model training
-│   ├── inference/         # API server and CLI
+│   ├── inference/         # API server, semantic cache, and Wazuh RAG
 │   ├── evaluation/        # Metrics and evaluation
 │   └── database/          # Database models and auth
 ├── scripts/             # Utility scripts
@@ -427,6 +431,83 @@ Trigger model retraining with feedback data.
 
 #### GET /api/admin/training/jobs
 List training job history.
+
+## Wazuh EDR Integration
+
+Zeus includes specialized support for Wazuh EDR/security logs through a RAG (Retrieval Augmented Generation) system that ensures accurate field name translation.
+
+### How It Works
+
+When targeting the `wazuh-alerts` index, Zeus automatically:
+
+1. **Injects Wazuh-specific context** into the model prompt with exact field names
+2. **Post-processes generated queries** to fix common field name errors
+3. **Translates generic field names** to Wazuh-specific fields:
+
+| Generic Field | Wazuh Field |
+|--------------|-------------|
+| src_ip | data.srcip |
+| dest_ip | data.dstip |
+| user | data.srcuser |
+| severity | rule.level |
+| event_type | rule.groups{} |
+
+### Available Wazuh Fields
+
+- **Agent**: `agent.id`, `agent.name`, `agent.ip`
+- **Rules**: `rule.id`, `rule.level`, `rule.description`, `rule.groups{}`, `rule.mitre.id{}`
+- **Network**: `data.srcip`, `data.dstip`, `data.srcport`, `data.dstport`
+- **Users**: `data.srcuser`, `data.dstuser`
+- **Activity**: `data.protocol`, `data.url`, `data.command`
+
+### Rule Groups for Filtering
+
+Use `rule.groups{}="value"` to filter by category:
+- `web` - HTTP/web traffic
+- `authentication_failed` - Failed logins
+- `authentication_success` - Successful logins
+- `sudo` - Sudo commands
+- `syscheck` - File integrity monitoring
+- `attack` - Attack detection
+
+### Example Queries
+
+```spl
+# Failed authentication attempts
+index=wazuh-alerts rule.groups{}="authentication_failed" | stats count by agent.name, data.srcuser
+
+# High severity alerts (level 10+)
+index=wazuh-alerts rule.level IN (10, 11, 12, 13, 14, 15) | table _time, agent.name, rule.description
+
+# Web attacks by source IP
+index=wazuh-alerts rule.groups{}="web" rule.groups{}="attack" | stats count by data.srcip
+```
+
+## Semantic Cache
+
+Zeus uses a semantic similarity cache to instantly serve approved queries without regeneration.
+
+### How It Works
+
+1. When a query receives positive feedback, it's added to the semantic cache
+2. New instructions are compared against cached instructions using sentence embeddings
+3. If similarity exceeds threshold (default 85%), the cached query is returned
+4. Time and count parameters are automatically substituted based on the new request
+
+### Benefits
+
+- **Faster responses**: Cached queries return instantly without model inference
+- **Consistent results**: Approved queries are reliably reused
+- **Learning from corrections**: Bad queries with analyst corrections are cached for future use
+- **Parameter flexibility**: "Show alerts from last 24 hours" uses same cached query as "last 7 days"
+
+### Configuration
+
+Set in environment variables:
+```bash
+SEMANTIC_CACHE_THRESHOLD=0.85  # Similarity threshold (0-1)
+SEMANTIC_CACHE_DEVICE=cpu      # cpu or cuda
+```
 
 ## Security
 

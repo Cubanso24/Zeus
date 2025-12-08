@@ -138,6 +138,99 @@
             color: #667eea;
         }
 
+        /* Index Selector */
+        .index-selector {
+            padding: 10px;
+            margin: 10px;
+            background: #2a2a3e;
+            border-radius: 8px;
+            border: 1px solid #3a3a4e;
+        }
+
+        .index-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .index-selector-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .index-selector-add {
+            padding: 2px 8px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .index-selector-add:hover {
+            background: #5a6fd6;
+        }
+
+        .index-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .index-tag {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #3a3a4e;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #e0e0e0;
+        }
+
+        .index-tag.active {
+            background: #667eea;
+        }
+
+        .index-tag-remove {
+            cursor: pointer;
+            color: #888;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .index-tag-remove:hover {
+            color: #dc3545;
+        }
+
+        .index-input-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .index-input {
+            flex: 1;
+            padding: 6px 8px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a4e;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 11px;
+        }
+
+        .index-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .index-input::placeholder {
+            color: #666;
+        }
+
         /* Stop Button */
         .stop-btn {
             padding: 12px 24px;
@@ -817,6 +910,20 @@
                 <button class="format-toggle-btn active" id="formatStructured" onclick="setExplanationFormat('structured')">Structured</button>
                 <button class="format-toggle-btn" id="formatParagraph" onclick="setExplanationFormat('paragraph')">Paragraph</button>
             </div>
+
+            <!-- Index Selector -->
+            <div class="index-selector">
+                <div class="index-selector-header">
+                    <span class="index-selector-label">🗂️ Splunk Indexes</span>
+                </div>
+                <div class="index-tags" id="indexTags">
+                    <!-- Index tags will be rendered here -->
+                </div>
+                <div class="index-input-row">
+                    <input type="text" class="index-input" id="newIndexInput" placeholder="Add index..." onkeypress="handleIndexKeyPress(event)">
+                    <button class="index-selector-add" onclick="addIndex()">+</button>
+                </div>
+            </div>
         </div>
 
         <!-- Main Chat -->
@@ -863,6 +970,67 @@
         let currentAbortController = null;
         let explanationFormat = 'structured'; // 'structured' or 'paragraph'
         let historyData = []; // Store history for filtering
+        let selectedIndexes = ['wazuh-alerts']; // Default index
+
+        // Index management functions
+        function renderIndexTags() {
+            const container = document.getElementById('indexTags');
+            if (selectedIndexes.length === 0) {
+                container.innerHTML = '<span style="font-size: 10px; color: #666;">No indexes selected (using defaults)</span>';
+                return;
+            }
+            container.innerHTML = selectedIndexes.map(idx => `
+                <span class="index-tag active">
+                    ${escapeHtml(idx)}
+                    <span class="index-tag-remove" onclick="removeIndex('${escapeHtml(idx)}')">&times;</span>
+                </span>
+            `).join('');
+        }
+
+        function addIndex() {
+            const input = document.getElementById('newIndexInput');
+            const indexName = input.value.trim().toLowerCase();
+            if (indexName && !selectedIndexes.includes(indexName)) {
+                selectedIndexes.push(indexName);
+                renderIndexTags();
+                saveIndexesToStorage();
+            }
+            input.value = '';
+        }
+
+        function removeIndex(indexName) {
+            selectedIndexes = selectedIndexes.filter(idx => idx !== indexName);
+            renderIndexTags();
+            saveIndexesToStorage();
+        }
+
+        function handleIndexKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addIndex();
+            }
+        }
+
+        function saveIndexesToStorage() {
+            localStorage.setItem('zeus_selected_indexes', JSON.stringify(selectedIndexes));
+        }
+
+        function loadIndexesFromStorage() {
+            const stored = localStorage.getItem('zeus_selected_indexes');
+            if (stored) {
+                try {
+                    selectedIndexes = JSON.parse(stored);
+                } catch (e) {
+                    console.error('Failed to parse stored indexes:', e);
+                    selectedIndexes = ['wazuh-alerts'];
+                }
+            }
+            renderIndexTags();
+        }
+
+        function getSelectedIndexes() {
+            return selectedIndexes.length > 0 ? selectedIndexes : null;
+        }
 
         // Explanation format toggle
         function setExplanationFormat(format) {
@@ -1082,7 +1250,8 @@
                         temperature: 0.3,
                         max_new_tokens: 256,
                         repetition_penalty: 1.2,
-                        explanation_format: explanationFormat
+                        explanation_format: explanationFormat,
+                        indexes: getSelectedIndexes()
                     }),
                     signal: currentAbortController.signal
                 });
@@ -1145,6 +1314,7 @@
 
             try {
                 // Generate 3 alternatives with different temperatures
+                const indexes = getSelectedIndexes();
                 const promises = [
                     fetch(`${API_URL}/generate`, {
                         method: 'POST',
@@ -1154,7 +1324,8 @@
                             input: '',
                             temperature: 0.2,
                             max_new_tokens: 256,
-                            repetition_penalty: 1.2
+                            repetition_penalty: 1.2,
+                            indexes: indexes
                         })
                     }),
                     fetch(`${API_URL}/generate`, {
@@ -1165,7 +1336,8 @@
                             input: '',
                             temperature: 0.5,
                             max_new_tokens: 256,
-                            repetition_penalty: 1.2
+                            repetition_penalty: 1.2,
+                            indexes: indexes
                         })
                     }),
                     fetch(`${API_URL}/generate`, {
@@ -1176,7 +1348,8 @@
                             input: '',
                             temperature: 0.8,
                             max_new_tokens: 256,
-                            repetition_penalty: 1.2
+                            repetition_penalty: 1.2,
+                            indexes: indexes
                         })
                     })
                 ];
@@ -1575,9 +1748,10 @@
             }
         };
 
-        // Initialize authentication on page load
+        // Initialize authentication and settings on page load
         window.addEventListener('DOMContentLoaded', () => {
             initAuth();
+            loadIndexesFromStorage();
         });
     </script>
 

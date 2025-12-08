@@ -89,6 +89,9 @@
                 <button onclick="switchTab('training')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
                     Training
                 </button>
+                <button onclick="switchTab('users')" class="tab-btn px-6 py-3 font-medium text-sm border-b-2 border-transparent hover:border-blue-300">
+                    Users
+                </button>
             </div>
         </div>
 
@@ -392,6 +395,58 @@
                 </div>
             </div>
         </div>
+
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">User Management</h2>
+                <div class="flex space-x-2">
+                    <input type="text" id="user-search" placeholder="Search users..."
+                           class="px-4 py-2 border rounded" onkeyup="searchUsers(event)">
+                    <button onclick="loadUsers()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Queries</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                    <div class="text-sm text-gray-700">
+                        Total: <span id="users-total">0</span> users
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="users-prev" onclick="changeUsersPage(-1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Previous
+                        </button>
+                        <span class="px-4 py-2">Page <span id="users-page">1</span></span>
+                        <button id="users-next" onclick="changeUsersPage(1)" class="px-4 py-2 border rounded hover:bg-gray-100">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Feedback Modal -->
@@ -427,6 +482,46 @@
         </div>
     </div>
 
+    <!-- Password Reset Modal -->
+    <div id="password-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Reset Password</h3>
+                <button onclick="closePasswordModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form onsubmit="submitPasswordReset(event)" class="space-y-4">
+                <input type="hidden" id="reset-user-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="reset-username" class="w-full px-4 py-2 border rounded bg-gray-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <input type="password" id="reset-new-password" class="w-full px-4 py-2 border rounded"
+                           placeholder="Enter new password" minlength="6" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                    <input type="password" id="reset-confirm-password" class="w-full px-4 py-2 border rounded"
+                           placeholder="Confirm new password" minlength="6" required>
+                </div>
+                <div id="password-error" class="text-red-500 text-sm" style="display: none;"></div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closePasswordModal()" class="px-4 py-2 border rounded hover:bg-gray-100">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Reset Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Auto-detect API URL based on environment
         const API_BASE = '';  // Use relative URLs
@@ -437,6 +532,8 @@
         let queriesPage = 1;
         let feedbackPage = 1;
         let trainingPage = 1;
+        let usersPage = 1;
+        let userSearchTerm = '';
 
         // Charts
         let queryChart = null;
@@ -505,6 +602,7 @@
             else if (tabName === 'feedback') loadFeedback();
             else if (tabName === 'system') loadSystemStats();
             else if (tabName === 'training') loadTrainingJobs();
+            else if (tabName === 'users') loadUsers();
         }
 
         // Analytics
@@ -973,6 +1071,199 @@
             document.getElementById('main-dashboard').style.display = 'none';
             document.getElementById('login-modal').style.display = 'flex';
             document.getElementById('login-form').reset();
+        }
+
+        // User Management
+        async function loadUsers() {
+            try {
+                let url = `/api/admin/users?page=${usersPage}`;
+                if (userSearchTerm) url += `&search=${encodeURIComponent(userSearchTerm)}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load users');
+
+                const data = await response.json();
+                document.getElementById('users-total').textContent = data.total;
+                document.getElementById('users-page').textContent = usersPage;
+
+                const tbody = document.getElementById('users-table-body');
+                if (data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.users.map(u => `
+                    <tr>
+                        <td class="px-6 py-4 text-sm">${u.id}</td>
+                        <td class="px-6 py-4 text-sm font-medium">${u.username}</td>
+                        <td class="px-6 py-4 text-sm">${u.email}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${u.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${u.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${u.is_admin ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
+                                ${u.is_admin ? 'Admin' : 'User'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm">${u.query_count}</td>
+                        <td class="px-6 py-4 text-sm">${u.last_login ? new Date(u.last_login).toLocaleString() : 'Never'}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <button onclick="openPasswordModal(${u.id}, '${u.username}')" class="text-blue-600 hover:text-blue-800 mr-2">Reset Password</button>
+                            <button onclick="toggleUserStatus(${u.id}, ${u.is_active})" class="text-yellow-600 hover:text-yellow-800 mr-2">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+                            <button onclick="toggleUserAdmin(${u.id}, ${u.is_admin})" class="text-purple-600 hover:text-purple-800 mr-2">${u.is_admin ? 'Remove Admin' : 'Make Admin'}</button>
+                            <button onclick="deleteUser(${u.id}, '${u.username}')" class="text-red-600 hover:text-red-800">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function changeUsersPage(delta) {
+            usersPage = Math.max(1, usersPage + delta);
+            loadUsers();
+        }
+
+        function searchUsers(event) {
+            if (event.key === 'Enter') {
+                userSearchTerm = document.getElementById('user-search').value.trim();
+                usersPage = 1;
+                loadUsers();
+            }
+        }
+
+        function openPasswordModal(userId, username) {
+            document.getElementById('reset-user-id').value = userId;
+            document.getElementById('reset-username').value = username;
+            document.getElementById('reset-new-password').value = '';
+            document.getElementById('reset-confirm-password').value = '';
+            document.getElementById('password-error').style.display = 'none';
+            document.getElementById('password-modal').classList.remove('hidden');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('hidden');
+        }
+
+        async function submitPasswordReset(event) {
+            event.preventDefault();
+            const userId = document.getElementById('reset-user-id').value;
+            const newPassword = document.getElementById('reset-new-password').value;
+            const confirmPassword = document.getElementById('reset-confirm-password').value;
+            const errorEl = document.getElementById('password-error');
+
+            if (newPassword !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ new_password: newPassword })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to reset password');
+                }
+
+                alert('Password reset successfully');
+                closePasswordModal();
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function toggleUserStatus(userId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_active: !currentStatus })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to update user');
+                }
+
+                alert(`User ${action}d successfully`);
+                loadUsers();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function toggleUserAdmin(userId, currentStatus) {
+            const action = currentStatus ? 'remove admin privileges from' : 'grant admin privileges to';
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_admin: !currentStatus })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to update user');
+                }
+
+                alert('User updated successfully');
+                loadUsers();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to DELETE user "${username}"? This action cannot be undone.`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete user');
+                }
+
+                alert('User deleted successfully');
+                loadUsers();
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         // Auto-refresh system stats every 30 seconds when on system tab

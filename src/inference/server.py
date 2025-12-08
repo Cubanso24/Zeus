@@ -26,6 +26,7 @@ from src.inference.semantic_cache import (
     initialize_semantic_cache,
     get_semantic_cache,
 )
+from src.inference.wazuh_rag import get_wazuh_context, fix_wazuh_query
 from src.database.database import get_db, SessionLocal
 from src.database.models import User as DBUser, Query as DBQuery, Feedback as DBFeedback, TrainingJob as DBTrainingJob
 from src.database.auth import (
@@ -46,6 +47,7 @@ class QueryRequest(BaseModel):
     top_p: float = Field(default=0.95, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     num_return_sequences: int = Field(default=1, ge=1, le=5, description="Number of queries to generate")
     explanation_format: str = Field(default="structured", description="Explanation format: 'structured' or 'paragraph'")
+    indexes: Optional[List[str]] = Field(default=None, description="Splunk indexes to focus on (e.g., ['wazuh-alerts', 'main'])")
 
 
 class QueryResponse(BaseModel):
@@ -302,6 +304,42 @@ class TrainingJobListResponse(BaseModel):
     page_size: int
 
 
+# Admin User Management Models
+class AdminUserItem(BaseModel):
+    """Admin user list item."""
+    id: int
+    username: str
+    email: str
+    full_name: Optional[str]
+    is_admin: bool
+    is_active: bool
+    created_at: datetime
+    last_login: Optional[datetime]
+    query_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUserListResponse(BaseModel):
+    """Admin user list response."""
+    users: List[AdminUserItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class PasswordResetRequest(BaseModel):
+    """Password reset request."""
+    new_password: str = Field(..., min_length=6, description="New password (min 6 characters)")
+
+
+class UserUpdateRequest(BaseModel):
+    """User update request."""
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Splunk Query LLM API",
@@ -544,10 +582,17 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     # Find user
     user = db.query(DBUser).filter(DBUser.username == request.username).first()
 
-    if not user or not verify_password(request.password, user.hashed_password):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="User does not exist",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not verify_password(request.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -664,8 +709,26 @@ async def generate_query(
                 )
 
         # No cache hit - generate new query
-        # System prompt to constrain model to use valid Splunk indexes
-        system_prompt = """You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
+        # Build system prompt based on user-specified indexes or defaults
+        if request.indexes and len(request.indexes) > 0:
+            # User specified indexes to focus on
+            index_list = "\n".join([f"- {idx}" for idx in request.indexes])
+            system_prompt = f"""You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
+
+IMPORTANT: Focus on these specific Splunk indexes:
+{index_list}
+
+When generating queries, prefer using these indexes. You may combine multiple indexes using OR if appropriate.
+Use sourcetype to filter specific log types within these indexes."""
+
+            # Add Wazuh RAG context if querying Wazuh index
+            wazuh_context = get_wazuh_context(request.instruction, request.indexes)
+            if wazuh_context:
+                system_prompt += f"\n\n{wazuh_context}"
+                logger.info("Added Wazuh RAG context to system prompt")
+        else:
+            # Default system prompt
+            system_prompt = """You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
 
 IMPORTANT: Only use these standard Splunk indexes:
 - main (default index for most data)
@@ -691,6 +754,10 @@ Use 'main' or 'os' for general system logs, and use sourcetype to filter specifi
 
         # Primary query
         primary_query = queries[0]
+
+        # Post-process to fix Wazuh field names if applicable
+        primary_query = fix_wazuh_query(primary_query, request.indexes)
+        logger.info(f"Post-processed primary query: {primary_query[:100]}...")
 
         # Check if it's a clarification request
         is_clarification = model.is_clarification_request(primary_query)
@@ -718,8 +785,8 @@ Use 'main' or 'os' for general system logs, and use sourcetype to filter specifi
                 logger.warning(traceback.format_exc())
                 explanation = None
 
-        # Alternative queries
-        alternatives = queries[1:] if len(queries) > 1 else []
+        # Alternative queries (also post-process for Wazuh)
+        alternatives = [fix_wazuh_query(q, request.indexes) for q in queries[1:]] if len(queries) > 1 else []
 
         # Save query to database
         db_query = DBQuery(
@@ -905,13 +972,27 @@ async def submit_feedback(
                 )
                 logger.info(f"Added query {query_record.id} to semantic cache")
 
-        # If rating is bad, remove from semantic cache if present
+        # If rating is bad, handle cache accordingly
         if feedback.rating == "bad" and query_record:
             cache = get_semantic_cache()
             if cache and cache.is_available():
-                cache.remove_from_cache(query_record.id)
+                if feedback.corrected_query:
+                    # User provided a correction - add the CORRECTED query to cache
+                    # This way, similar future questions will get the correct answer
+                    cache.add_to_cache(
+                        query_id=query_record.id,
+                        instruction=feedback.instruction,
+                        generated_query=feedback.corrected_query,  # Use corrected as the "generated"
+                        user_id=current_user.id,
+                        corrected_query=feedback.corrected_query
+                    )
+                    logger.info(f"Added corrected query {query_record.id} to semantic cache")
+                else:
+                    # No correction provided - just remove the bad query from cache
+                    cache.remove_from_cache(query_record.id)
+                    logger.info(f"Removed bad query {query_record.id} from semantic cache")
 
-        # If rating is bad and correction provided, save to corrections
+        # If rating is bad and correction provided, save to corrections training file
         if feedback.rating == "bad" and feedback.corrected_query:
             corrections_file = os.path.join(feedback_dir, "corrections_training.jsonl")
             training_entry = {
@@ -1063,7 +1144,7 @@ async def get_query_history(
 # ADMIN ENDPOINTS
 # ============================================================================
 
-@app.get("/api/admin/analytics", response_model=AnalyticsResponse)
+@app.get("/admin/analytics", response_model=AnalyticsResponse)
 async def get_admin_analytics(
     admin_user: DBUser = Depends(admin_required),
     db: Session = Depends(get_db),
@@ -1140,7 +1221,7 @@ async def get_admin_analytics(
         raise HTTPException(status_code=500, detail=f"Error getting analytics: {str(e)}")
 
 
-@app.get("/api/admin/queries", response_model=AdminQueryListResponse)
+@app.get("/admin/queries", response_model=AdminQueryListResponse)
 async def get_admin_queries(
     page: int = 1,
     page_size: int = 50,
@@ -1216,7 +1297,7 @@ async def get_admin_queries(
         raise HTTPException(status_code=500, detail=f"Error getting queries: {str(e)}")
 
 
-@app.get("/api/admin/feedback", response_model=AdminFeedbackListResponse)
+@app.get("/admin/feedback", response_model=AdminFeedbackListResponse)
 async def get_admin_feedback(
     page: int = 1,
     page_size: int = 50,
@@ -1282,7 +1363,7 @@ async def get_admin_feedback(
         raise HTTPException(status_code=500, detail=f"Error getting feedback: {str(e)}")
 
 
-@app.put("/api/admin/feedback/{feedback_id}")
+@app.put("/admin/feedback/{feedback_id}")
 async def update_admin_feedback(
     feedback_id: int,
     request: FeedbackUpdateRequest,
@@ -1323,7 +1404,7 @@ async def update_admin_feedback(
         raise HTTPException(status_code=500, detail=f"Error updating feedback: {str(e)}")
 
 
-@app.delete("/api/admin/feedback/{feedback_id}")
+@app.delete("/admin/feedback/{feedback_id}")
 async def delete_admin_feedback(
     feedback_id: int,
     admin_user: DBUser = Depends(admin_required),
@@ -1354,7 +1435,7 @@ async def delete_admin_feedback(
         raise HTTPException(status_code=500, detail=f"Error deleting feedback: {str(e)}")
 
 
-@app.post("/api/admin/feedback/export")
+@app.post("/admin/feedback/export")
 async def export_feedback(
     rating: Optional[str] = None,
     admin_user: DBUser = Depends(admin_required),
@@ -1416,7 +1497,7 @@ async def export_feedback(
         raise HTTPException(status_code=500, detail=f"Error exporting feedback: {str(e)}")
 
 
-@app.get("/api/admin/system/stats", response_model=SystemStatsResponse)
+@app.get("/admin/system/stats", response_model=SystemStatsResponse)
 async def get_system_stats(
     admin_user: DBUser = Depends(admin_required),
 ):
@@ -1501,7 +1582,7 @@ async def get_system_stats(
 metrics_start_time = datetime.utcnow()
 
 
-@app.get("/api/admin/system/metrics", response_model=SystemMetricsResponse)
+@app.get("/admin/system/metrics", response_model=SystemMetricsResponse)
 async def get_system_metrics(
     admin_user: DBUser = Depends(admin_required),
     db: Session = Depends(get_db),
@@ -1537,7 +1618,7 @@ async def get_system_metrics(
         raise HTTPException(status_code=500, detail=f"Error getting system metrics: {str(e)}")
 
 
-@app.post("/api/admin/training/start", response_model=TrainingJobResponse)
+@app.post("/admin/training/start", response_model=TrainingJobResponse)
 async def start_training_job(
     request: TrainingJobRequest,
     admin_user: DBUser = Depends(admin_required),
@@ -1574,7 +1655,7 @@ async def start_training_job(
         raise HTTPException(status_code=500, detail=f"Error starting training job: {str(e)}")
 
 
-@app.get("/api/admin/training/jobs", response_model=TrainingJobListResponse)
+@app.get("/admin/training/jobs", response_model=TrainingJobListResponse)
 async def get_training_jobs(
     page: int = 1,
     page_size: int = 20,
@@ -1613,7 +1694,7 @@ async def get_training_jobs(
         raise HTTPException(status_code=500, detail=f"Error getting training jobs: {str(e)}")
 
 
-@app.get("/api/admin/training/jobs/{job_id}", response_model=TrainingJobResponse)
+@app.get("/admin/training/jobs/{job_id}", response_model=TrainingJobResponse)
 async def get_training_job(
     job_id: int,
     admin_user: DBUser = Depends(admin_required),
@@ -1637,6 +1718,193 @@ async def get_training_job(
     except Exception as e:
         logger.error(f"Error getting training job: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting training job: {str(e)}")
+
+
+# ============================================================================
+# ADMIN USER MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.get("/admin/users", response_model=AdminUserListResponse)
+async def get_admin_users(
+    page: int = 1,
+    page_size: int = 50,
+    search: Optional[str] = None,
+    admin_user: DBUser = Depends(admin_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all users with their stats for admin dashboard.
+
+    Requires admin privileges.
+    """
+    try:
+        # Build base query
+        query = db.query(DBUser)
+
+        # Apply search filter if provided
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                (DBUser.username.ilike(search_term)) |
+                (DBUser.email.ilike(search_term)) |
+                (DBUser.full_name.ilike(search_term))
+            )
+
+        # Get total count
+        total = query.count()
+
+        # Get paginated users
+        offset = (page - 1) * page_size
+        users = query.order_by(desc(DBUser.created_at)).offset(offset).limit(page_size).all()
+
+        # Build response with query counts
+        user_items = []
+        for user in users:
+            query_count = db.query(func.count(DBQuery.id)).filter(
+                DBQuery.user_id == user.id
+            ).scalar() or 0
+
+            user_items.append(AdminUserItem(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                full_name=user.full_name,
+                is_admin=user.is_admin,
+                is_active=user.is_active,
+                created_at=user.created_at,
+                last_login=user.last_login,
+                query_count=query_count,
+            ))
+
+        logger.info(f"Admin {admin_user.username} retrieved {len(user_items)} users (page {page})")
+
+        return AdminUserListResponse(
+            users=user_items,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting admin users: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting users: {str(e)}")
+
+
+@app.post("/admin/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: int,
+    request: PasswordResetRequest,
+    admin_user: DBUser = Depends(admin_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Reset a user's password.
+
+    Requires admin privileges.
+    """
+    try:
+        # Find user
+        user = db.query(DBUser).filter(DBUser.id == user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Hash new password
+        user.hashed_password = get_password_hash(request.new_password)
+        db.commit()
+
+        logger.info(f"Admin {admin_user.username} reset password for user {user.username} (ID: {user_id})")
+
+        return {"message": f"Password reset successfully for user {user.username}"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting password: {e}")
+        raise HTTPException(status_code=500, detail=f"Error resetting password: {str(e)}")
+
+
+@app.put("/admin/users/{user_id}")
+async def update_user(
+    user_id: int,
+    request: UserUpdateRequest,
+    admin_user: DBUser = Depends(admin_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Update user status (active/admin flags).
+
+    Requires admin privileges.
+    """
+    try:
+        # Find user
+        user = db.query(DBUser).filter(DBUser.id == user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Prevent admin from deactivating themselves
+        if user.id == admin_user.id and request.is_active is False:
+            raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
+
+        # Prevent admin from removing their own admin status
+        if user.id == admin_user.id and request.is_admin is False:
+            raise HTTPException(status_code=400, detail="Cannot remove your own admin privileges")
+
+        # Update fields
+        if request.is_active is not None:
+            user.is_active = request.is_active
+        if request.is_admin is not None:
+            user.is_admin = request.is_admin
+
+        db.commit()
+
+        logger.info(f"Admin {admin_user.username} updated user {user.username} (ID: {user_id})")
+
+        return {"message": f"User {user.username} updated successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating user: {str(e)}")
+
+
+@app.delete("/admin/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    admin_user: DBUser = Depends(admin_required),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a user account.
+
+    Requires admin privileges.
+    """
+    try:
+        # Find user
+        user = db.query(DBUser).filter(DBUser.id == user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Prevent admin from deleting themselves
+        if user.id == admin_user.id:
+            raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+        username = user.username
+        db.delete(user)
+        db.commit()
+
+        logger.info(f"Admin {admin_user.username} deleted user {username} (ID: {user_id})")
+
+        return {"message": f"User {username} deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user: {e}")
+        raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 
 # ============================================================================

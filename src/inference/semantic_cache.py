@@ -239,9 +239,10 @@ class SemanticCache:
             return 0
 
         from src.database.models import Query, Feedback
+        from sqlalchemy import or_, and_
 
         try:
-            # Query for all queries with 'good' feedback
+            # Query for all queries with 'good' feedback OR 'bad' feedback with corrections
             approved_queries = db_session.query(
                 Query.id,
                 Query.instruction,
@@ -251,7 +252,10 @@ class SemanticCache:
             ).join(
                 Feedback, Query.id == Feedback.query_id
             ).filter(
-                Feedback.rating == 'good'
+                or_(
+                    Feedback.rating == 'good',
+                    and_(Feedback.rating == 'bad', Feedback.corrected_query.isnot(None))
+                )
             ).all()
 
             if not approved_queries:

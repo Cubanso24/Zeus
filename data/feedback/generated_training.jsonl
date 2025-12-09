@@ -1,0 +1,21 @@
+{"instruction": "Show failed login events in the last week", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"authentication_failed\" | stats count by agent.name, rule.description"}
+{"instruction": "Find successful authentication events in the last 7 days", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"authentication_success\" | stats count by agent.name"}
+{"instruction": "Get alerts by severity level in the last 30 days", "output": "index=wazuh-alerts earliest=-30d | stats count by rule.level | sort -rule.level"}
+{"instruction": "Count alerts per agent in the last 30 days", "output": "index=wazuh-alerts earliest=-30d | stats count by agent.name | sort -count"}
+{"instruction": "Show top 10 agents by alert count this week", "output": "index=wazuh-alerts earliest=-7d | stats count by agent.name | sort -count | head 10"}
+{"instruction": "Find sudo command executions in the last 7 days", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"sudo\" | stats count by agent.name, rule.description"}
+{"instruction": "Show file integrity changes in the last week", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"syscheck\" | stats count by syscheck.event"}
+{"instruction": "Find web attacks in the last 30 days", "output": "index=wazuh-alerts earliest=-30d \"rule.groups{}\"=\"web\" | stats count by agent.name, rule.description"}
+{"instruction": "Show PAM authentication events this week", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"pam\" | stats count by agent.name"}
+{"instruction": "Find audit events in the last 7 days", "output": "index=wazuh-alerts earliest=-7d \"rule.groups{}\"=\"audit\" | stats count by rule.description"}
+{"instruction": "Get hourly alert distribution for the last 24 hours", "output": "index=wazuh-alerts earliest=-24h | timechart span=1h count by rule.level"}
+{"instruction": "Find the top 10 most common alerts this month", "output": "index=wazuh-alerts earliest=-30d | stats count by rule.description | sort -count | head 10"}
+{"instruction": "Count unique rules triggered in the last week", "output": "index=wazuh-alerts earliest=-7d | stats dc(rule.id) as unique_rules"}
+{"instruction": "Show alert timeline by hour for the last day", "output": "index=wazuh-alerts earliest=-24h | timechart span=1h count"}
+{"instruction": "Find all alerts containing SSH in the description", "output": "index=wazuh-alerts earliest=-7d rule.description=\"*SSH*\" | stats count by rule.description, agent.name"}
+{"instruction": "Find password-related events in the last 30 days", "output": "index=wazuh-alerts earliest=-30d rule.description=\"*password*\" | stats count by agent.name, rule.description"}
+{"instruction": "Find the latest 50 alerts", "output": "index=wazuh-alerts earliest=-24h | head 50 | table _time agent.name rule.description rule.level"}
+{"instruction": "Calculate alert rate per hour for the last week", "output": "index=wazuh-alerts earliest=-7d | timechart span=1h count | stats avg(count) as avg_per_hour"}
+{"instruction": "Find agents with more than 100 alerts this week", "output": "index=wazuh-alerts earliest=-7d | stats count by agent.name | where count > 100"}
+{"instruction": "Show distribution of alerts by rule group", "output": "index=wazuh-alerts earliest=-7d | stats count by \"rule.groups{}\" | sort -count | head 20"}
+{"instruction": "Find rare alerts (fewer than 10 occurrences)", "output": "index=wazuh-alerts earliest=-30d | stats count by rule.description | where count < 10 | sort count"}

@@ -31,6 +31,9 @@ services:
       - HF_HOME=/app/.cache/huggingface
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - SPLUNK_HOST=${SPLUNK_HOST:-https://10.10.10.114:8089}
+      - SPLUNK_TOKEN=${SPLUNK_TOKEN}
+      - SPLUNK_VERIFY_SSL=false
     volumes:
       - ./data/feedback:/app/data/feedback
       - ./models:/app/models  # Read-write for saving fine-tuned models

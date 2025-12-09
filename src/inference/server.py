@@ -27,6 +27,7 @@ from src.inference.semantic_cache import (
     get_semantic_cache,
 )
 from src.inference.wazuh_rag import get_wazuh_context, fix_wazuh_query
+from src.inference.splunk_client import get_splunk_client, initialize_splunk_client
 from src.database.database import get_db, SessionLocal
 from src.database.models import User as DBUser, Query as DBQuery, Feedback as DBFeedback, TrainingJob as DBTrainingJob
 from src.database.auth import (
@@ -338,6 +339,76 @@ class UserUpdateRequest(BaseModel):
     """User update request."""
     is_active: Optional[bool] = None
     is_admin: Optional[bool] = None
+
+
+# Context and Splunk Integration Models
+class IndexInfo(BaseModel):
+    """Information about a Splunk index."""
+    name: str
+    event_count: int
+    description: Optional[str] = None
+
+
+class LogCategory(BaseModel):
+    """Log category information."""
+    id: str
+    name: str
+    description: str
+    keywords: List[str]
+    example_questions: List[str]
+
+
+class ContextAnalysisRequest(BaseModel):
+    """Request to analyze user instruction and determine context needs."""
+    instruction: str = Field(..., description="User's natural language query")
+    selected_indexes: Optional[List[str]] = Field(default=None, description="Already selected indexes")
+    selected_category: Optional[str] = Field(default=None, description="Already selected log category")
+    time_range: Optional[str] = Field(default=None, description="Selected time range")
+
+
+class DataMismatchWarning(BaseModel):
+    """Warning when user requests data their indexes can't provide."""
+    requested_capability: str = Field(..., description="What the user is asking for")
+    description: str = Field(..., description="Description of the requested data type")
+    missing_data_type: str = Field(..., description="What data capability is missing")
+    suggestion: str = Field(..., description="What to do instead or where to get this data")
+    severity: str = Field(default="warning", description="warning or error")
+
+
+class ContextAnalysisResponse(BaseModel):
+    """Response from context analysis - determines if we need more info."""
+    needs_clarification: bool = Field(..., description="Whether clarifying questions are needed")
+    clarification_questions: List[str] = Field(default=[], description="Questions to ask the user")
+    detected_category: Optional[str] = Field(None, description="Detected log category from instruction")
+    confidence_score: float = Field(default=0.0, description="Confidence in understanding the request")
+    suggested_indexes: List[str] = Field(default=[], description="Suggested indexes based on instruction")
+    context_hints: List[str] = Field(default=[], description="Hints about what context would help")
+    # Data capability warnings
+    data_warnings: List[DataMismatchWarning] = Field(default=[], description="Warnings about data availability")
+    data_source_info: Optional[str] = Field(None, description="Explanation of what data sources provide")
+
+
+class QueryContextRequest(BaseModel):
+    """Enhanced query request with required context."""
+    instruction: str = Field(..., description="Natural language description")
+    input: str = Field(default="", description="Additional context")
+    # Required context fields
+    indexes: List[str] = Field(..., min_length=1, description="Selected Splunk indexes (required)")
+    log_category: Optional[str] = Field(None, description="Selected log category")
+    time_range: Optional[str] = Field(default="-24h", description="Time range for the query")
+    # Optional parameters
+    max_new_tokens: int = Field(default=512, ge=1, le=2048)
+    temperature: float = Field(default=0.1, ge=0.0, le=2.0)
+    explanation_format: str = Field(default="structured")
+    # Context answers (from clarification)
+    context_answers: Optional[Dict[str, str]] = Field(default=None, description="Answers to clarification questions")
+
+
+class SplunkConnectionStatus(BaseModel):
+    """Splunk connection status."""
+    connected: bool
+    message: str
+    indexes_available: int = 0
 
 
 # Initialize FastAPI app
@@ -1905,6 +1976,433 @@ async def delete_user(
     except Exception as e:
         logger.error(f"Error deleting user: {e}")
         raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
+
+
+# ============================================================================
+# SPLUNK INTEGRATION & CONTEXT ENDPOINTS
+# ============================================================================
+
+@app.get("/splunk/status", response_model=SplunkConnectionStatus)
+async def get_splunk_status(current_user: DBUser = Depends(get_current_user)):
+    """
+    Check Splunk connection status.
+    """
+    try:
+        client = get_splunk_client()
+        connected, message = client.test_connection()
+        indexes = client.get_available_indexes() if connected else []
+
+        return SplunkConnectionStatus(
+            connected=connected,
+            message=message,
+            indexes_available=len(indexes)
+        )
+    except Exception as e:
+        logger.error(f"Error checking Splunk status: {e}")
+        return SplunkConnectionStatus(
+            connected=False,
+            message=f"Error: {str(e)}",
+            indexes_available=0
+        )
+
+
+@app.get("/splunk/indexes", response_model=List[IndexInfo])
+async def get_splunk_indexes(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get available Splunk indexes.
+
+    Returns a list of indexes the user can query against.
+    """
+    try:
+        client = get_splunk_client()
+        indexes = client.get_available_indexes()
+
+        # Add descriptions for known indexes
+        index_descriptions = {
+            "wazuh-alerts": "Wazuh EDR security alerts and events",
+            "main": "Default index for general data",
+            "_audit": "Splunk audit logs",
+            "_internal": "Splunk internal logs",
+        }
+
+        return [
+            IndexInfo(
+                name=idx.name,
+                event_count=idx.event_count,
+                description=index_descriptions.get(idx.name)
+            )
+            for idx in indexes
+        ]
+    except Exception as e:
+        logger.error(f"Error getting indexes: {e}")
+        # Return default indexes on error
+        return [
+            IndexInfo(name="wazuh-alerts", event_count=0, description="Wazuh EDR security alerts"),
+            IndexInfo(name="main", event_count=0, description="Default index")
+        ]
+
+
+@app.get("/splunk/categories", response_model=List[LogCategory])
+async def get_log_categories(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get available log categories for context selection.
+
+    These categories help guide users in specifying what type of logs they want to query.
+    """
+    try:
+        client = get_splunk_client()
+        categories = client.get_log_categories()
+
+        return [
+            LogCategory(
+                id=cat_id,
+                name=cat_id.replace("_", " ").title(),
+                description=info["description"],
+                keywords=info["keywords"],
+                example_questions=info["example_questions"]
+            )
+            for cat_id, info in categories.items()
+        ]
+    except Exception as e:
+        logger.error(f"Error getting categories: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting categories: {str(e)}")
+
+
+@app.post("/context/analyze", response_model=ContextAnalysisResponse)
+async def analyze_context(
+    request: ContextAnalysisRequest,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Analyze user instruction and determine if clarification is needed.
+
+    This endpoint helps determine:
+    - If the request is too vague
+    - What clarifying questions to ask
+    - What log category the request likely falls into
+    - What indexes might be relevant
+
+    Call this BEFORE generating a query to ensure sufficient context.
+    """
+    try:
+        client = get_splunk_client()
+        instruction = request.instruction.strip()
+
+        # Detect category from instruction
+        detected_category = client.detect_category(instruction)
+
+        # Calculate confidence score based on instruction specificity
+        confidence_score = 0.0
+        instruction_lower = instruction.lower()
+
+        # Increase confidence for specific elements
+        specificity_indicators = {
+            "time_range": ["hour", "day", "week", "month", "last", "recent", "today", "yesterday", "earliest", "latest"],
+            "target": ["host", "agent", "user", "ip", "source", "destination", "all", "specific"],
+            "action": ["find", "show", "search", "count", "list", "get", "analyze", "investigate"],
+            "filter": ["where", "with", "having", "equals", "contains", "greater", "less", "between"],
+        }
+
+        for category, indicators in specificity_indicators.items():
+            if any(ind in instruction_lower for ind in indicators):
+                confidence_score += 0.25
+
+        # Cap at 1.0
+        confidence_score = min(confidence_score, 1.0)
+
+        # Determine if clarification is needed
+        needs_clarification = confidence_score < 0.5
+
+        # If user already provided context, increase confidence
+        if request.selected_indexes and len(request.selected_indexes) > 0:
+            confidence_score += 0.2
+            needs_clarification = confidence_score < 0.5
+
+        if request.selected_category:
+            confidence_score += 0.1
+            needs_clarification = confidence_score < 0.5
+            detected_category = request.selected_category
+
+        if request.time_range:
+            confidence_score += 0.1
+            needs_clarification = confidence_score < 0.5
+
+        # Get clarification questions if needed
+        clarification_questions = []
+        context_hints = []
+
+        if needs_clarification:
+            clarification_questions = client.get_clarification_questions(
+                instruction,
+                detected_category
+            )
+
+            # Add context hints
+            if not request.selected_indexes:
+                context_hints.append("Select one or more indexes to search")
+            if not request.time_range:
+                context_hints.append("Specify a time range (e.g., 'last 24 hours')")
+            if detected_category:
+                context_hints.append(f"Your query appears to be about {detected_category.replace('_', ' ')}")
+
+        # Suggest indexes based on detected category
+        suggested_indexes = []
+        if detected_category:
+            # For security-related queries, suggest wazuh-alerts
+            security_categories = ["authentication", "malware", "network", "process", "file", "compliance"]
+            if detected_category in security_categories:
+                suggested_indexes = ["wazuh-alerts"]
+            else:
+                suggested_indexes = ["main"]
+
+        # Check for data capability mismatches
+        data_warnings = []
+        data_source_info = None
+        indexes_to_check = request.selected_indexes or suggested_indexes or ["wazuh-alerts"]
+
+        if indexes_to_check:
+            # Check if user is asking for data their indexes can't provide
+            mismatches = client.check_data_capability(instruction, indexes_to_check)
+
+            for mismatch in mismatches:
+                data_warnings.append(DataMismatchWarning(
+                    requested_capability=mismatch.requested_capability,
+                    description=mismatch.requested_description,
+                    missing_data_type=mismatch.missing_data_type,
+                    suggestion=mismatch.suggestion,
+                    severity=mismatch.severity
+                ))
+
+                # Add to context hints if there's a mismatch
+                if mismatch.severity == "error":
+                    context_hints.insert(0, f"Your selected logs may not have {mismatch.requested_capability} data")
+
+            # Get data source explanation
+            data_source_info = client.get_data_source_explanation(indexes_to_check)
+
+        # If there are data warnings, set needs_clarification
+        if data_warnings:
+            needs_clarification = True
+
+        return ContextAnalysisResponse(
+            needs_clarification=needs_clarification,
+            clarification_questions=clarification_questions,
+            detected_category=detected_category,
+            confidence_score=round(min(confidence_score, 1.0), 2),
+            suggested_indexes=suggested_indexes,
+            context_hints=context_hints,
+            data_warnings=data_warnings,
+            data_source_info=data_source_info
+        )
+
+    except Exception as e:
+        logger.error(f"Error analyzing context: {e}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing context: {str(e)}")
+
+
+@app.post("/generate/with-context", response_model=QueryResponse)
+async def generate_query_with_context(
+    request: QueryContextRequest,
+    current_user: DBUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a Splunk query with required context.
+
+    This endpoint requires explicit context (indexes, category) and will
+    use that context to generate better, more targeted queries.
+
+    Unlike the basic /generate endpoint, this one:
+    - Requires at least one index to be specified
+    - Uses context answers to refine the query
+    - Includes time range constraints automatically
+    """
+    if model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    try:
+        # Build enhanced instruction with context
+        enhanced_instruction = request.instruction
+
+        # Add context answers to instruction
+        if request.context_answers:
+            context_parts = []
+            for question, answer in request.context_answers.items():
+                if answer:
+                    context_parts.append(f"{question}: {answer}")
+            if context_parts:
+                enhanced_instruction = f"{request.instruction}\n\nAdditional context:\n" + "\n".join(context_parts)
+
+        # Add time range to instruction if specified
+        if request.time_range and request.time_range not in enhanced_instruction.lower():
+            enhanced_instruction = f"{enhanced_instruction} (time range: {request.time_range})"
+
+        # Check cache first
+        cache = get_semantic_cache()
+        if cache and cache.is_available():
+            cache_match = cache.search(enhanced_instruction)
+            if cache_match.found:
+                logger.info(f"Cache hit for context query")
+
+                # Generate explanation for cached query
+                explanation = None
+                try:
+                    explanation = model.generate_explanation(
+                        query=cache_match.query,
+                        instruction=request.instruction,
+                        explanation_format=request.explanation_format,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to generate explanation: {e}")
+
+                # Save to history
+                db_query = DBQuery(
+                    user_id=current_user.id,
+                    instruction=request.instruction,
+                    input_text=request.input,
+                    generated_query=cache_match.query,
+                    is_clarification=False,
+                    alternatives=None,
+                    temperature=request.temperature,
+                )
+                db.add(db_query)
+                db.commit()
+                db.refresh(db_query)
+
+                return QueryResponse(
+                    query=cache_match.query,
+                    explanation=explanation,
+                    is_clarification=False,
+                    clarification_questions=[],
+                    alternatives=[],
+                    query_id=db_query.id,
+                    from_cache=True,
+                    cache_similarity=round(cache_match.similarity_score, 3),
+                    cache_note=f"Previously approved query - {cache_match.similarity_score*100:.0f}% match",
+                    cache_params_modified=cache_match.params_modified,
+                    cache_modifications=cache_match.modifications,
+                )
+
+        # Build context-aware system prompt
+        index_list = "\n".join([f"- {idx}" for idx in request.indexes])
+        system_prompt = f"""You are a Splunk query generator. Generate valid SPL (Search Processing Language) queries.
+
+IMPORTANT CONTEXT:
+- Target indexes: {', '.join(request.indexes)}
+- Time range: {request.time_range or 'not specified - use earliest=-24h as default'}
+{f'- Log category: {request.log_category}' if request.log_category else ''}
+
+Focus on these specific indexes:
+{index_list}
+
+REQUIREMENTS:
+1. Always include the index specification
+2. Include time constraints (earliest/latest) in the query
+3. Use appropriate field names for the selected index
+4. Generate practical, executable queries"""
+
+        # Add Wazuh RAG context if applicable
+        wazuh_context = get_wazuh_context(enhanced_instruction, request.indexes)
+        if wazuh_context:
+            system_prompt += f"\n\n{wazuh_context}"
+            logger.info("Added Wazuh RAG context to system prompt")
+
+        # Generate query
+        queries = model.generate(
+            instruction=enhanced_instruction,
+            input_text=request.input,
+            system_prompt=system_prompt,
+            max_new_tokens=request.max_new_tokens,
+            temperature=request.temperature,
+        )
+
+        primary_query = queries[0]
+
+        # Post-process for Wazuh
+        primary_query = fix_wazuh_query(primary_query, request.indexes)
+
+        # Check if it's a clarification
+        is_clarification = model.is_clarification_request(primary_query)
+        clarification_questions = []
+        explanation = None
+
+        if is_clarification:
+            clarification_questions = model.extract_clarification_questions(primary_query)
+        else:
+            try:
+                explanation = model.generate_explanation(
+                    query=primary_query,
+                    instruction=request.instruction,
+                    explanation_format=request.explanation_format,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to generate explanation: {e}")
+
+        # Save to database
+        db_query = DBQuery(
+            user_id=current_user.id,
+            instruction=request.instruction,
+            input_text=request.input,
+            generated_query=primary_query,
+            is_clarification=is_clarification,
+            alternatives=None,
+            temperature=request.temperature,
+        )
+        db.add(db_query)
+        db.commit()
+        db.refresh(db_query)
+
+        logger.info(f"Context query generated for user {current_user.username}")
+
+        return QueryResponse(
+            query=primary_query,
+            explanation=explanation,
+            is_clarification=is_clarification,
+            clarification_questions=clarification_questions,
+            alternatives=[],
+            query_id=db_query.id,
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating context query: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating query: {str(e)}")
+
+
+@app.post("/splunk/validate")
+async def validate_query(
+    query: str,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Validate a Splunk query by running it against the actual Splunk instance.
+
+    Returns whether the query is valid and how many results it returns.
+    """
+    try:
+        client = get_splunk_client()
+
+        if not client.is_configured():
+            return {
+                "valid": None,
+                "message": "Splunk not configured - cannot validate",
+                "result_count": 0
+            }
+
+        is_valid, message, result_count = client.validate_query(query)
+
+        return {
+            "valid": is_valid,
+            "message": message,
+            "result_count": result_count
+        }
+
+    except Exception as e:
+        logger.error(f"Error validating query: {e}")
+        return {
+            "valid": False,
+            "message": f"Validation error: {str(e)}",
+            "result_count": 0
+        }
 
 
 # ============================================================================

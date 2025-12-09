@@ -878,6 +878,371 @@
         .logout-btn:hover {
             background: #c82333;
         }
+
+        /* Context Wizard Modal */
+        .context-wizard-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .context-wizard-overlay.show {
+            display: flex;
+        }
+
+        .context-wizard {
+            background: #1e1e2e;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .wizard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .wizard-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .wizard-header p {
+            color: rgba(255,255,255,0.8);
+            margin: 8px 0 0 0;
+            font-size: 13px;
+        }
+
+        .wizard-body {
+            padding: 20px;
+        }
+
+        .wizard-section {
+            margin-bottom: 20px;
+        }
+
+        .wizard-section-title {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wizard-section-title .required {
+            color: #dc3545;
+            font-size: 12px;
+        }
+
+        .wizard-query-preview {
+            background: #2a2a3e;
+            padding: 12px;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 13px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 20px;
+        }
+
+        .wizard-category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .wizard-category-btn {
+            background: #2a2a3e;
+            border: 2px solid #3a3a4e;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .wizard-category-btn:hover {
+            border-color: #667eea;
+        }
+
+        .wizard-category-btn.selected {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .wizard-category-btn .icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .wizard-category-btn .label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .wizard-time-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .wizard-time-btn {
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .wizard-time-btn:hover {
+            border-color: #667eea;
+        }
+
+        .wizard-time-btn.selected {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .wizard-questions {
+            background: #3d3520;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .wizard-questions-header {
+            color: #ffc107;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wizard-question {
+            margin-bottom: 12px;
+        }
+
+        .wizard-question:last-child {
+            margin-bottom: 0;
+        }
+
+        .wizard-question label {
+            display: block;
+            color: #e0e0e0;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .wizard-question input,
+        .wizard-question select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a4e;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+
+        .wizard-question input:focus,
+        .wizard-question select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .wizard-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #3a3a4e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wizard-skip-btn {
+            background: transparent;
+            border: 1px solid #3a3a4e;
+            color: #888;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .wizard-skip-btn:hover {
+            border-color: #888;
+            color: #e0e0e0;
+        }
+
+        .wizard-submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .wizard-submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .wizard-submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .wizard-confidence {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .wizard-confidence-bar {
+            flex: 1;
+            height: 6px;
+            background: #3a3a4e;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .wizard-confidence-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .wizard-confidence-fill.low {
+            background: #dc3545;
+        }
+
+        .wizard-confidence-fill.medium {
+            background: #ffc107;
+        }
+
+        .wizard-confidence-fill.high {
+            background: #28a745;
+        }
+
+        .wizard-confidence-label {
+            font-size: 11px;
+            color: #888;
+            min-width: 80px;
+        }
+
+        .wizard-hints {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .wizard-hint {
+            background: #2a2a3e;
+            color: #888;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        /* Data Availability Warnings */
+        .wizard-data-warnings {
+            background: #3d2020;
+            border: 1px solid #dc3545;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .wizard-data-warnings-header {
+            color: #dc3545;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wizard-data-warning {
+            background: #2a1a1a;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .wizard-data-warning:last-child {
+            margin-bottom: 0;
+        }
+
+        .wizard-data-warning-title {
+            color: #ff6b6b;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .wizard-data-warning-desc {
+            color: #ccc;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .wizard-data-warning-suggestion {
+            color: #4ade80;
+            font-size: 11px;
+            background: #1a2a1a;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #4ade80;
+        }
+
+        .wizard-data-info {
+            background: #1a2a3e;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .wizard-data-info-header {
+            color: #3b82f6;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .wizard-data-info-content {
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.5;
+        }
     </style>
     <script>
         // Auto-detect API URL based on environment
@@ -971,6 +1336,294 @@
         let explanationFormat = 'structured'; // 'structured' or 'paragraph'
         let historyData = []; // Store history for filtering
         let selectedIndexes = ['wazuh-alerts']; // Default index
+
+        // Context Wizard State
+        let wizardState = {
+            instruction: '',
+            selectedCategory: null,
+            selectedTimeRange: '-24h',
+            clarificationQuestions: [],
+            contextAnswers: {},
+            confidenceScore: 0
+        };
+
+        // Context Wizard Functions
+        function openContextWizard(instruction) {
+            wizardState.instruction = instruction;
+            wizardState.selectedCategory = null;
+            wizardState.contextAnswers = {};
+
+            // Update query preview
+            document.getElementById('wizard-query-preview').textContent = instruction;
+
+            // Reset category selection
+            document.querySelectorAll('.wizard-category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            // Show wizard
+            document.getElementById('context-wizard-overlay').classList.add('show');
+
+            // Analyze context
+            analyzeContext();
+        }
+
+        function closeContextWizard() {
+            document.getElementById('context-wizard-overlay').classList.remove('show');
+        }
+
+        function selectCategory(category) {
+            wizardState.selectedCategory = category;
+
+            // Update UI
+            document.querySelectorAll('.wizard-category-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.category === category);
+            });
+
+            // Re-analyze with new category
+            analyzeContext();
+        }
+
+        function selectTimeRange(timeRange) {
+            wizardState.selectedTimeRange = timeRange;
+
+            // Update UI
+            document.querySelectorAll('.wizard-time-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.time === timeRange);
+            });
+
+            // Re-analyze
+            analyzeContext();
+        }
+
+        async function analyzeContext() {
+            try {
+                const response = await fetch(`${API_URL}/context/analyze`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        instruction: wizardState.instruction,
+                        selected_indexes: selectedIndexes,
+                        selected_category: wizardState.selectedCategory,
+                        time_range: wizardState.selectedTimeRange
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Context analysis failed');
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Update confidence display
+                wizardState.confidenceScore = data.confidence_score;
+                updateConfidenceDisplay(data.confidence_score);
+
+                // Auto-select detected category if none selected
+                if (data.detected_category && !wizardState.selectedCategory) {
+                    selectCategory(data.detected_category);
+                }
+
+                // Show clarification questions if needed
+                if (data.needs_clarification && data.clarification_questions.length > 0) {
+                    showClarificationQuestions(data.clarification_questions);
+                } else {
+                    hideClarificationQuestions();
+                }
+
+                // Show data availability warnings
+                if (data.data_warnings && data.data_warnings.length > 0) {
+                    showDataWarnings(data.data_warnings);
+                } else {
+                    showDataWarnings([]);
+                }
+
+                // Show data source info
+                if (data.data_source_info) {
+                    showDataSourceInfo(data.data_source_info);
+                } else {
+                    showDataSourceInfo(null);
+                }
+
+                // Show hints
+                showContextHints(data.context_hints);
+
+            } catch (error) {
+                console.error('Error analyzing context:', error);
+            }
+        }
+
+        function updateConfidenceDisplay(score) {
+            const fill = document.getElementById('wizard-confidence-fill');
+            const text = document.getElementById('wizard-confidence-text');
+
+            const percentage = Math.round(score * 100);
+            fill.style.width = percentage + '%';
+            text.textContent = percentage + '%';
+
+            // Update color class
+            fill.classList.remove('low', 'medium', 'high');
+            if (score < 0.4) {
+                fill.classList.add('low');
+            } else if (score < 0.7) {
+                fill.classList.add('medium');
+            } else {
+                fill.classList.add('high');
+            }
+        }
+
+        function showClarificationQuestions(questions) {
+            wizardState.clarificationQuestions = questions;
+            const section = document.getElementById('wizard-questions-section');
+            const container = document.getElementById('wizard-questions-container');
+
+            container.innerHTML = questions.map((q, i) => `
+                <div class="wizard-question">
+                    <label for="wizard-q-${i}">${escapeHtml(q)}</label>
+                    <input type="text" id="wizard-q-${i}" placeholder="Your answer..."
+                           onchange="updateContextAnswer(${i}, this.value)">
+                </div>
+            `).join('');
+
+            section.style.display = 'block';
+        }
+
+        function hideClarificationQuestions() {
+            document.getElementById('wizard-questions-section').style.display = 'none';
+        }
+
+        function updateContextAnswer(index, value) {
+            const question = wizardState.clarificationQuestions[index];
+            if (question) {
+                wizardState.contextAnswers[question] = value;
+            }
+            // Re-analyze with new answers
+            analyzeContext();
+        }
+
+        function showContextHints(hints) {
+            const container = document.getElementById('wizard-hints');
+            if (hints && hints.length > 0) {
+                container.innerHTML = hints.map(h =>
+                    `<span class="wizard-hint">${escapeHtml(h)}</span>`
+                ).join('');
+            } else {
+                container.innerHTML = '';
+            }
+        }
+
+        function showDataWarnings(warnings) {
+            const section = document.getElementById('wizard-data-warnings-section');
+            const container = document.getElementById('wizard-data-warnings-container');
+
+            if (!warnings || warnings.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = warnings.map(w => `
+                <div class="wizard-data-warning">
+                    <div class="wizard-data-warning-title">
+                        ${w.severity === 'error' ? '🚫' : '⚠️'} ${escapeHtml(w.requested_capability)}
+                    </div>
+                    <div class="wizard-data-warning-desc">
+                        ${escapeHtml(w.description)}
+                    </div>
+                    <div class="wizard-data-warning-suggestion">
+                        <strong>💡 Suggestion:</strong> ${escapeHtml(w.suggestion)}
+                    </div>
+                </div>
+            `).join('');
+
+            section.style.display = 'block';
+        }
+
+        function showDataSourceInfo(info) {
+            const section = document.getElementById('wizard-data-info-section');
+            const content = document.getElementById('wizard-data-info-content');
+
+            if (!info) {
+                section.style.display = 'none';
+                return;
+            }
+
+            content.textContent = info;
+            section.style.display = 'block';
+        }
+
+        async function submitWithContext() {
+            closeContextWizard();
+
+            const input = document.getElementById('userInput');
+            input.value = wizardState.instruction;
+
+            // Add user message to chat
+            addMessage(wizardState.instruction, 'user');
+            lastUserQuery = wizardState.instruction;
+            input.value = '';
+
+            // Setup abort controller
+            currentAbortController = new AbortController();
+
+            // Show loading state
+            const sendBtn = document.getElementById('sendBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            sendBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            try {
+                // Use the new context-aware endpoint
+                const response = await fetch(`${API_URL}/generate/with-context`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        instruction: wizardState.instruction,
+                        input: '',
+                        indexes: selectedIndexes,
+                        log_category: wizardState.selectedCategory,
+                        time_range: wizardState.selectedTimeRange,
+                        temperature: 0.3,
+                        max_new_tokens: 256,
+                        explanation_format: explanationFormat,
+                        context_answers: wizardState.contextAnswers
+                    }),
+                    signal: currentAbortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Prepare cache info
+                const cacheInfo = data.from_cache ? {
+                    from_cache: data.from_cache,
+                    cache_similarity: data.cache_similarity,
+                    cache_note: data.cache_note,
+                    cache_params_modified: data.cache_params_modified,
+                    cache_modifications: data.cache_modifications
+                } : null;
+
+                // Add response
+                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation, cacheInfo);
+
+                // Reload history
+                loadHistory();
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}. Please try again.`, 'assistant', false, true);
+            } finally {
+                currentAbortController = null;
+                sendBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+            }
+        }
 
         // Index management functions
         function renderIndexTags() {
@@ -1220,6 +1873,17 @@
         }
 
         async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Open context wizard to gather context before generating
+            openContextWizard(message);
+        }
+
+        // Legacy direct send (used for high-confidence queries or after wizard)
+        async function sendMessageDirect() {
             const input = document.getElementById('userInput');
             const message = input.value.trim();
 
@@ -1754,6 +2418,134 @@
             loadIndexesFromStorage();
         });
     </script>
+
+    <!-- Context Wizard Modal -->
+    <div id="context-wizard-overlay" class="context-wizard-overlay">
+        <div class="context-wizard">
+            <div class="wizard-header">
+                <h2>Help Zeus Understand Your Query</h2>
+                <p>Provide some context so Zeus can generate a more accurate query</p>
+            </div>
+            <div class="wizard-body">
+                <!-- Query Preview -->
+                <div class="wizard-query-preview" id="wizard-query-preview">
+                    Your query will appear here...
+                </div>
+
+                <!-- Confidence Score -->
+                <div class="wizard-confidence">
+                    <span class="wizard-confidence-label">Confidence:</span>
+                    <div class="wizard-confidence-bar">
+                        <div class="wizard-confidence-fill low" id="wizard-confidence-fill" style="width: 20%"></div>
+                    </div>
+                    <span id="wizard-confidence-text" style="font-size: 11px; color: #888;">20%</span>
+                </div>
+
+                <!-- Log Category Selection -->
+                <div class="wizard-section">
+                    <div class="wizard-section-title">
+                        What type of logs are you looking for?
+                    </div>
+                    <div class="wizard-category-grid" id="wizard-categories">
+                        <button class="wizard-category-btn" data-category="authentication" onclick="selectCategory('authentication')">
+                            <span class="icon">🔐</span>
+                            <span class="label">Authentication</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="network" onclick="selectCategory('network')">
+                            <span class="icon">🌐</span>
+                            <span class="label">Network</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="process" onclick="selectCategory('process')">
+                            <span class="icon">⚙️</span>
+                            <span class="label">Process/Commands</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="file" onclick="selectCategory('file')">
+                            <span class="icon">📁</span>
+                            <span class="label">File Activity</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="malware" onclick="selectCategory('malware')">
+                            <span class="icon">🦠</span>
+                            <span class="label">Malware/Threats</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="web" onclick="selectCategory('web')">
+                            <span class="icon">🌍</span>
+                            <span class="label">Web Traffic</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="system" onclick="selectCategory('system')">
+                            <span class="icon">💻</span>
+                            <span class="label">System Events</span>
+                        </button>
+                        <button class="wizard-category-btn" data-category="compliance" onclick="selectCategory('compliance')">
+                            <span class="icon">✅</span>
+                            <span class="label">Compliance</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Time Range Selection -->
+                <div class="wizard-section">
+                    <div class="wizard-section-title">
+                        Time Range
+                    </div>
+                    <div class="wizard-time-options">
+                        <button class="wizard-time-btn" data-time="-1h" onclick="selectTimeRange('-1h')">Last Hour</button>
+                        <button class="wizard-time-btn selected" data-time="-24h" onclick="selectTimeRange('-24h')">Last 24h</button>
+                        <button class="wizard-time-btn" data-time="-7d" onclick="selectTimeRange('-7d')">Last 7 Days</button>
+                        <button class="wizard-time-btn" data-time="-30d" onclick="selectTimeRange('-30d')">Last 30 Days</button>
+                        <button class="wizard-time-btn" data-time="-90d" onclick="selectTimeRange('-90d')">Last 90 Days</button>
+                        <button class="wizard-time-btn" data-time="-1y" onclick="selectTimeRange('-1y')">Last Year</button>
+                    </div>
+                </div>
+
+                <!-- Data Availability Warnings (populated dynamically) -->
+                <div id="wizard-data-warnings-section" style="display: none;">
+                    <div class="wizard-data-warnings">
+                        <div class="wizard-data-warnings-header">
+                            <span>⚠️</span>
+                            <span>Data Availability Warning</span>
+                        </div>
+                        <div id="wizard-data-warnings-container">
+                            <!-- Warnings will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Source Info -->
+                <div id="wizard-data-info-section" style="display: none;">
+                    <div class="wizard-data-info">
+                        <div class="wizard-data-info-header">Your Selected Data Sources</div>
+                        <div class="wizard-data-info-content" id="wizard-data-info-content">
+                            <!-- Data source info will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clarifying Questions (populated dynamically) -->
+                <div class="wizard-section" id="wizard-questions-section" style="display: none;">
+                    <div class="wizard-questions">
+                        <div class="wizard-questions-header">
+                            <span>❓</span>
+                            <span>Please answer these questions for a better query:</span>
+                        </div>
+                        <div id="wizard-questions-container">
+                            <!-- Questions will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Context Hints -->
+                <div class="wizard-hints" id="wizard-hints">
+                    <!-- Hints will be inserted here -->
+                </div>
+            </div>
+            <div class="wizard-footer">
+                <button class="wizard-skip-btn" onclick="closeContextWizard()">Cancel</button>
+                <button class="wizard-submit-btn" id="wizard-submit-btn" onclick="submitWithContext()">
+                    Generate Query
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Authentication Modal -->
     <div id="auth-modal" class="auth-modal">

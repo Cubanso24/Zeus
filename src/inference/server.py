@@ -27,6 +27,7 @@ from src.inference.semantic_cache import (
     get_semantic_cache,
 )
 from src.inference.wazuh_rag import get_wazuh_context, fix_wazuh_query
+from src.inference.spl_rag import get_spl_rag, SPLRAG
 from src.inference.splunk_client import get_splunk_client, initialize_splunk_client
 from src.database.database import get_db, SessionLocal
 from src.database.models import User as DBUser, Query as DBQuery, Feedback as DBFeedback, TrainingJob as DBTrainingJob
@@ -35,6 +36,15 @@ from src.database.auth import (
     get_password_hash,
     create_access_token,
     decode_access_token,
+)
+from src.database.ldap_auth import (
+    get_ldap_authenticator,
+    ldap_authenticate,
+    is_ldap_enabled,
+    LDAPConfig,
+    get_ldap_config,
+    save_ldap_config_to_db,
+    reset_ldap_authenticator,
 )
 
 
@@ -344,6 +354,49 @@ class UserUpdateRequest(BaseModel):
     is_admin: Optional[bool] = None
 
 
+# LDAP Settings Models
+class LDAPConfigRequest(BaseModel):
+    """LDAP configuration request."""
+    enabled: bool = Field(default=False, description="Enable LDAP authentication")
+    server_url: str = Field(default="", description="LDAP server URL (e.g., ldap://ldap.example.com:389)")
+    use_ssl: bool = Field(default=False, description="Use LDAPS (SSL)")
+    use_tls: bool = Field(default=True, description="Use STARTTLS")
+    bind_dn: str = Field(default="", description="Bind DN for LDAP searches")
+    bind_password: Optional[str] = Field(default=None, description="Bind password (leave empty to keep existing)")
+    base_dn: str = Field(default="", description="Base DN for user searches")
+    user_search_filter: str = Field(
+        default="(|(uid={username})(sAMAccountName={username})(mail={username}))",
+        description="LDAP search filter for finding users"
+    )
+    username_attribute: str = Field(default="uid", description="Attribute for username")
+    email_attribute: str = Field(default="mail", description="Attribute for email")
+    fullname_attribute: str = Field(default="cn", description="Attribute for full name")
+    auth_method: str = Field(default="SIMPLE", description="Authentication method: SIMPLE or NTLM")
+
+
+class LDAPConfigResponse(BaseModel):
+    """LDAP configuration response."""
+    enabled: bool
+    server_url: str
+    use_ssl: bool
+    use_tls: bool
+    bind_dn: str
+    bind_password: str  # Masked password
+    base_dn: str
+    user_search_filter: str
+    username_attribute: str
+    email_attribute: str
+    fullname_attribute: str
+    auth_method: str
+    config_source: str = Field(default="database", description="Where config is loaded from: database or environment")
+
+
+class LDAPTestRequest(BaseModel):
+    """LDAP test connection request with optional config override."""
+    config: Optional[LDAPConfigRequest] = Field(None, description="Test with specific config instead of saved config")
+    test_username: Optional[str] = Field(None, description="Optional username to test search")
+
+
 # Context and Splunk Integration Models
 class IndexInfo(BaseModel):
     """Information about a Splunk index."""
@@ -412,6 +465,55 @@ class SplunkConnectionStatus(BaseModel):
     connected: bool
     message: str
     indexes_available: int = 0
+
+
+# SPL Academy / Learn Mode Models
+class LearnRequest(BaseModel):
+    """Request for SPL learning/educational content."""
+    question: str = Field(..., description="Question about SPL commands, functions, or concepts")
+    topic_filter: Optional[str] = Field(None, description="Filter by topic type: command, function, concept, example, best_practice")
+
+
+class LearnResponse(BaseModel):
+    """Response with SPL educational content."""
+    answer: str = Field(..., description="Detailed explanation/answer")
+    sources: List[Dict[str, str]] = Field(default=[], description="Sources used for the answer")
+    related_topics: List[str] = Field(default=[], description="Related topics to explore")
+    similarity_score: float = Field(default=0.0, description="Confidence score for the answer")
+
+
+class SPLCommandInfo(BaseModel):
+    """Detailed information about an SPL command."""
+    name: str
+    category: str
+    syntax: str
+    description: str
+    examples: List[str] = []
+    tips: List[str] = []
+    related: List[str] = []
+
+
+class SPLFunctionInfo(BaseModel):
+    """Detailed information about an SPL function."""
+    name: str
+    category: str
+    syntax: str
+    description: str
+    examples: List[str] = []
+    tips: List[str] = []
+    related: List[str] = []
+
+
+class SPLCommandListResponse(BaseModel):
+    """List of SPL commands."""
+    commands: List[str]
+    categories: List[str]
+
+
+class SPLFunctionListResponse(BaseModel):
+    """List of SPL functions."""
+    functions: List[str]
+    categories: List[str]
 
 
 # Initialize FastAPI app
@@ -651,25 +753,80 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """
     Login with username and password.
 
-    Validates credentials and returns an access token.
+    Supports hybrid authentication:
+    - First tries LDAP authentication if enabled
+    - Falls back to local authentication if LDAP fails or is disabled
+    - Auto-provisions LDAP users on first login
     """
-    # Find user
+    user = None
+    ldap_authenticated = False
+    ldap_user_info = None
+
+    # Try LDAP authentication first if enabled
+    if is_ldap_enabled():
+        ldap_authenticated, ldap_user_info = ldap_authenticate(request.username, request.password)
+        if ldap_authenticated:
+            logger.info(f"LDAP authentication successful for: {request.username}")
+
+    # Find existing user in database
     user = db.query(DBUser).filter(DBUser.username == request.username).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User does not exist",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if ldap_authenticated:
+        # LDAP authentication successful
+        if not user:
+            # Auto-provision new LDAP user
+            user = DBUser(
+                username=ldap_user_info.get("username", request.username),
+                email=ldap_user_info.get("email", f"{request.username}@ldap.local"),
+                full_name=ldap_user_info.get("full_name", request.username),
+                hashed_password=None,  # LDAP users don't have local passwords
+                is_ldap_user=True,
+                ldap_dn=ldap_user_info.get("dn"),
+                is_active=True,
+                is_admin=False,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            logger.info(f"Auto-provisioned LDAP user: {user.username}")
+        else:
+            # Update existing user's LDAP info if needed
+            if not user.is_ldap_user:
+                # User existed as local, now also has LDAP - keep as hybrid
+                user.ldap_dn = ldap_user_info.get("dn")
+            # Update user info from LDAP
+            if ldap_user_info.get("email"):
+                # Only update email if not already set or if LDAP user
+                if user.is_ldap_user or not user.email:
+                    user.email = ldap_user_info.get("email")
+            if ldap_user_info.get("full_name"):
+                user.full_name = ldap_user_info.get("full_name")
+    else:
+        # LDAP failed or disabled - try local authentication
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User does not exist",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    if not verify_password(request.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        # Check if this is an LDAP-only user (no local password)
+        if user.is_ldap_user and not user.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="LDAP authentication failed. This account requires LDAP authentication.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
+        # Verify local password
+        if not user.hashed_password or not verify_password(request.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    # Check if user is active
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -683,7 +840,8 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     # Create access token
     access_token = create_access_token(data={"sub": user.username})
 
-    logger.info(f"User logged in: {user.username}")
+    auth_method = "LDAP" if ldap_authenticated else "local"
+    logger.info(f"User logged in via {auth_method}: {user.username}")
 
     return Token(
         access_token=access_token,
@@ -706,6 +864,184 @@ async def get_current_user_info(current_user: DBUser = Depends(get_current_user)
     Returns information about the currently authenticated user.
     """
     return UserResponse.from_orm(current_user)
+
+
+@app.get("/auth/ldap/status")
+async def get_ldap_status(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get LDAP authentication status and configuration (admin only).
+
+    Returns whether LDAP is enabled and basic configuration info.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    ldap_auth = get_ldap_authenticator()
+    config = ldap_auth.config
+
+    return {
+        "ldap_enabled": ldap_auth.is_available,
+        "ldap_library_installed": True,  # If we got here, ldap3 is available
+        "config": {
+            "server_url": config.server_url if config.server_url else "(not configured)",
+            "base_dn": config.base_dn if config.base_dn else "(not configured)",
+            "use_ssl": config.use_ssl,
+            "use_tls": config.use_tls,
+            "auth_method": config.auth_method,
+            "username_attribute": config.username_attribute,
+            "email_attribute": config.email_attribute,
+        }
+    }
+
+
+@app.post("/auth/ldap/test")
+async def test_ldap_connection(
+    request: Optional[LDAPTestRequest] = None,
+    current_user: DBUser = Depends(get_current_user)
+):
+    """
+    Test LDAP connection (admin only).
+
+    Attempts to connect and bind to the LDAP server.
+    Can optionally test with a specific config before saving.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    # If testing with specific config, create a temporary authenticator
+    if request and request.config:
+        from src.database.ldap_auth import LDAPAuthenticator
+        test_config = LDAPConfig(
+            enabled=request.config.enabled,
+            server_url=request.config.server_url,
+            use_ssl=request.config.use_ssl,
+            use_tls=request.config.use_tls,
+            bind_dn=request.config.bind_dn,
+            bind_password=request.config.bind_password or "",
+            base_dn=request.config.base_dn,
+            user_search_filter=request.config.user_search_filter,
+            username_attribute=request.config.username_attribute,
+            email_attribute=request.config.email_attribute,
+            fullname_attribute=request.config.fullname_attribute,
+            auth_method=request.config.auth_method,
+        )
+        ldap_auth = LDAPAuthenticator(test_config)
+    else:
+        ldap_auth = get_ldap_authenticator()
+
+    success, message = ldap_auth.test_connection()
+
+    # If testing user search
+    user_search_result = None
+    if request and request.test_username and success:
+        user_info = ldap_auth.search_user(request.test_username)
+        if user_info:
+            user_search_result = {
+                "found": True,
+                "dn": user_info.get("dn"),
+                "username": user_info.get("username"),
+                "email": user_info.get("email"),
+                "full_name": user_info.get("full_name"),
+            }
+        else:
+            user_search_result = {"found": False, "message": f"User '{request.test_username}' not found in LDAP"}
+
+    return {
+        "success": success,
+        "message": message,
+        "user_search_result": user_search_result
+    }
+
+
+@app.get("/admin/settings/ldap", response_model=LDAPConfigResponse)
+async def get_ldap_config_endpoint(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get current LDAP configuration (admin only).
+
+    Returns the full LDAP configuration with masked password.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    # Get config and determine source
+    from src.database.ldap_auth import load_ldap_config_from_db
+    db_config = load_ldap_config_from_db()
+
+    if db_config:
+        config = db_config
+        config_source = "database"
+    else:
+        config = LDAPConfig.from_env()
+        config_source = "environment"
+
+    config_dict = config.to_dict(include_password=False)
+    config_dict["config_source"] = config_source
+
+    return LDAPConfigResponse(**config_dict)
+
+
+@app.put("/admin/settings/ldap", response_model=LDAPConfigResponse)
+async def update_ldap_config(
+    request: LDAPConfigRequest,
+    current_user: DBUser = Depends(get_current_user)
+):
+    """
+    Update LDAP configuration (admin only).
+
+    Saves LDAP configuration to the database.
+    If bind_password is None or empty, keeps the existing password.
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    # Get existing config to preserve password if not provided
+    existing_config = get_ldap_config()
+    bind_password = request.bind_password
+    if not bind_password or bind_password == "********":
+        bind_password = existing_config.bind_password
+
+    # Create new config
+    new_config = LDAPConfig(
+        enabled=request.enabled,
+        server_url=request.server_url,
+        use_ssl=request.use_ssl,
+        use_tls=request.use_tls,
+        bind_dn=request.bind_dn,
+        bind_password=bind_password,
+        base_dn=request.base_dn,
+        user_search_filter=request.user_search_filter,
+        username_attribute=request.username_attribute,
+        email_attribute=request.email_attribute,
+        fullname_attribute=request.fullname_attribute,
+        auth_method=request.auth_method,
+    )
+
+    # Save to database
+    if not save_ldap_config_to_db(new_config, user_id=current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save LDAP configuration"
+        )
+
+    logger.info(f"LDAP configuration updated by user {current_user.username}")
+
+    # Return updated config
+    config_dict = new_config.to_dict(include_password=False)
+    config_dict["config_source"] = "database"
+
+    return LDAPConfigResponse(**config_dict)
 
 
 @app.post("/generate", response_model=QueryResponse)
@@ -793,7 +1129,14 @@ IMPORTANT: Focus on these specific Splunk indexes:
 {index_list}
 
 When generating queries, prefer using these indexes. You may combine multiple indexes using OR if appropriate.
-Use sourcetype to filter specific log types within these indexes."""
+Use sourcetype to filter specific log types within these indexes.
+
+IMPORTANT - DO NOT add output formatting unless explicitly requested:
+- Do NOT add | table unless the user asks for specific fields
+- Do NOT add | stats unless the user asks for statistics/counts/aggregations
+- Do NOT add | head or | sort unless the user asks for limiting or sorting
+- Do NOT add | where clauses unless filtering is specifically needed
+- Keep queries simple and minimal - only include what the user asked for"""
 
             # Add Wazuh RAG context if querying Wazuh index
             wazuh_context = get_wazuh_context(request.instruction, request.indexes)
@@ -813,7 +1156,14 @@ IMPORTANT: Only use these standard Splunk indexes:
 - syslog (syslog data)
 
 Do NOT use custom indexes like 'linux', 'firewall', 'network', 'windows', 'security', etc.
-Use 'main' or 'os' for general system logs, and use sourcetype to filter specific log types."""
+Use 'main' or 'os' for general system logs, and use sourcetype to filter specific log types.
+
+IMPORTANT - DO NOT add output formatting unless explicitly requested:
+- Do NOT add | table unless the user asks for specific fields
+- Do NOT add | stats unless the user asks for statistics/counts/aggregations
+- Do NOT add | head or | sort unless the user asks for limiting or sorting
+- Do NOT add | where clauses unless filtering is specifically needed
+- Keep queries simple and minimal - only include what the user asked for"""
 
         # Generate query
         queries = model.generate(
@@ -2236,9 +2586,30 @@ async def generate_query_with_context(
             if context_parts:
                 enhanced_instruction = f"{request.instruction}\n\nAdditional context:\n" + "\n".join(context_parts)
 
-        # Add time range to instruction if specified
-        if request.time_range and request.time_range not in enhanced_instruction.lower():
+        # Add time range to instruction if specified AND user hasn't already specified dates/times
+        # Check for common date/time patterns in the user's original instruction
+        import re
+        date_time_patterns = [
+            r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b',  # MM/DD/YYYY, DD-MM-YYYY
+            r'\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b',    # YYYY-MM-DD
+            r'\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?\s*,?\s*\d{4}\b',  # January 15th, 2025
+            r'\b\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*,?\s*\d{4}\b',  # 15th January 2025
+            r'\bthrough\b.*\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)',  # "through july" date range
+            r'\bfrom\b.*\bto\b',  # "from X to Y" date range
+            r'\bbetween\b.*\band\b',  # "between X and Y" date range
+            r'\bearliest\s*=',  # Already has SPL time specifier
+            r'\blatest\s*=',   # Already has SPL time specifier
+        ]
+        
+        user_specified_date = any(
+            re.search(pattern, request.instruction.lower()) 
+            for pattern in date_time_patterns
+        )
+        
+        if request.time_range and not user_specified_date and request.time_range not in enhanced_instruction.lower():
             enhanced_instruction = f"{enhanced_instruction} (time range: {request.time_range})"
+        elif user_specified_date:
+            logger.info(f"User specified date/time in instruction, skipping wizard time range")
 
         # Check cache first
         cache = get_semantic_cache()
@@ -2302,7 +2673,14 @@ REQUIREMENTS:
 1. Always include the index specification
 2. Include time constraints (earliest/latest) in the query
 3. Use appropriate field names for the selected index
-4. Generate practical, executable queries"""
+4. Generate practical, executable queries
+
+IMPORTANT - DO NOT add output formatting unless explicitly requested:
+- Do NOT add | table unless the user asks for specific fields
+- Do NOT add | stats unless the user asks for statistics/counts/aggregations
+- Do NOT add | head or | sort unless the user asks for limiting or sorting
+- Do NOT add | where clauses unless filtering is specifically needed
+- Keep queries simple and minimal - only include what the user asked for"""
 
         # Add Wazuh RAG context if applicable
         wazuh_context = get_wazuh_context(enhanced_instruction, request.indexes)
@@ -2432,6 +2810,234 @@ async def validate_query(
             "message": f"Validation error: {str(e)}",
             "result_count": 0
         }
+
+
+# ============================================================================
+# SPL ACADEMY / LEARN MODE ENDPOINTS
+# ============================================================================
+
+@app.post("/learn", response_model=LearnResponse)
+async def learn_spl(
+    request: LearnRequest,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Answer educational questions about SPL commands, functions, and concepts.
+
+    This endpoint helps analysts learn about Splunk Processing Language
+    without generating actual queries. It provides explanations, examples,
+    tips, and best practices.
+
+    Examples of questions:
+    - "What does the stats command do?"
+    - "How do I use the eval function?"
+    - "What's the difference between stats and eventstats?"
+    - "How do I filter by time in Splunk?"
+    - "What are best practices for search optimization?"
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        # Get answer from RAG
+        result = spl_rag.answer_question(request.question)
+
+        return LearnResponse(
+            answer=result["answer"],
+            sources=result["sources"],
+            related_topics=result["related_topics"],
+            similarity_score=result.get("similarity_score", 0.0)
+        )
+
+    except Exception as e:
+        logger.error(f"Error in learn endpoint: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+
+
+@app.get("/learn/commands", response_model=SPLCommandListResponse)
+async def list_spl_commands(
+    category: Optional[str] = None,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    List available SPL commands, optionally filtered by category.
+
+    Categories include: search, filtering, aggregation, transformation,
+    display, ordering, limiting, visualization, correlation, enrichment,
+    extraction, combining, data, metadata.
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        commands = spl_rag.list_commands(category)
+        categories = spl_rag.get_command_categories()
+
+        return SPLCommandListResponse(
+            commands=commands,
+            categories=categories
+        )
+
+    except Exception as e:
+        logger.error(f"Error listing commands: {e}")
+        raise HTTPException(status_code=500, detail=f"Error listing commands: {str(e)}")
+
+
+@app.get("/learn/commands/{command_name}", response_model=SPLCommandInfo)
+async def get_spl_command(
+    command_name: str,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Get detailed information about a specific SPL command.
+
+    Returns syntax, description, examples, tips, and related commands.
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        cmd = spl_rag.get_command(command_name.lower())
+
+        if not cmd:
+            raise HTTPException(status_code=404, detail=f"Command '{command_name}' not found")
+
+        return SPLCommandInfo(
+            name=cmd["name"],
+            category=cmd.get("category", ""),
+            syntax=cmd.get("syntax", ""),
+            description=cmd.get("description", ""),
+            examples=cmd.get("examples", []),
+            tips=cmd.get("tips", []),
+            related=cmd.get("related", [])
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting command: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting command: {str(e)}")
+
+
+@app.get("/learn/functions", response_model=SPLFunctionListResponse)
+async def list_spl_functions(
+    category: Optional[str] = None,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    List available SPL eval functions, optionally filtered by category.
+
+    Categories include: conditional, string, conversion, math, time,
+    multivalue, informational, comparison, cryptographic.
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        functions = spl_rag.list_functions(category)
+        categories = spl_rag.get_function_categories()
+
+        return SPLFunctionListResponse(
+            functions=functions,
+            categories=categories
+        )
+
+    except Exception as e:
+        logger.error(f"Error listing functions: {e}")
+        raise HTTPException(status_code=500, detail=f"Error listing functions: {str(e)}")
+
+
+@app.get("/learn/functions/{function_name}", response_model=SPLFunctionInfo)
+async def get_spl_function(
+    function_name: str,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Get detailed information about a specific SPL eval function.
+
+    Returns syntax, description, examples, tips, and related functions.
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        func = spl_rag.get_function(function_name.lower())
+
+        if not func:
+            raise HTTPException(status_code=404, detail=f"Function '{function_name}' not found")
+
+        return SPLFunctionInfo(
+            name=func["name"],
+            category=func.get("category", ""),
+            syntax=func.get("syntax", ""),
+            description=func.get("description", ""),
+            examples=func.get("examples", []),
+            tips=func.get("tips", []),
+            related=func.get("related", [])
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting function: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting function: {str(e)}")
+
+
+@app.get("/learn/search")
+async def search_spl_knowledge(
+    q: str,
+    doc_type: Optional[str] = None,
+    limit: int = 10,
+    current_user: DBUser = Depends(get_current_user),
+):
+    """
+    Search SPL knowledge base for relevant content.
+
+    Parameters:
+    - q: Search query
+    - doc_type: Filter by type (command, function, concept, example, best_practice)
+    - limit: Maximum results to return (default 10)
+
+    Returns matching documents with relevance scores.
+    """
+    try:
+        spl_rag = get_spl_rag()
+
+        if not spl_rag.is_initialized:
+            spl_rag.initialize()
+
+        # Parse doc_types
+        doc_types = [doc_type] if doc_type else None
+
+        results = spl_rag.search(q, top_k=limit, doc_types=doc_types)
+
+        return {
+            "query": q,
+            "results": [
+                {
+                    "type": r["type"],
+                    "name": r["name"],
+                    "content": r["content"][:500] + "..." if len(r["content"]) > 500 else r["content"],
+                    "similarity": round(r.get("similarity", 0), 3)
+                }
+                for r in results
+            ],
+            "total": len(results)
+        }
+
+    except Exception as e:
+        logger.error(f"Error searching knowledge base: {e}")
+        raise HTTPException(status_code=500, detail=f"Error searching: {str(e)}")
 
 
 # ============================================================================

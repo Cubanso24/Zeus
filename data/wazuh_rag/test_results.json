@@ -1,0 +1,133 @@
+[
+  {
+    "instruction": "Show me all alerts from the last 7 days",
+    "query": "index=wazuh-alerts earliest=-7d@d latest=now | table _time, agent.name, rule.groups{}, data.srcip, data.destip, data.protocol, rule.level, rule.description",
+    "status": "SUCCESS",
+    "count": 148011,
+    "sample": {
+      "_time": "2025-12-04T16:44:45.400+00:00",
+      "agent.name": [
+        "OPNSenseCPANEL.mitic.gov.py",
+        "OPNSenseCPANEL.mitic.gov.py"
+      ],
+      "rule.groups{}": [
+        "web",
+        "accesslog",
+        "attack",
+        "web",
+        "accesslog",
+        "attack"
+      ],
+      "data.srcip": [
+        "98.83.226.125",
+        "98.83.226.125"
+      ],
+      "data.protocol": [
+        "GET",
+        "GET"
+      ],
+      "rule.level": [
+        "5",
+        "5"
+      ],
+      "rule.description": [
+        "Web server 400 error code.",
+        "Web server 400 error code."
+      ]
+    }
+  },
+  {
+    "instruction": "Count alerts by agent name",
+    "query": "index=wazuh-alerts | stats count by agent.name",
+    "status": "SUCCESS",
+    "count": 37,
+    "sample": {
+      "agent.name": "AIP-admin",
+      "count": "2"
+    }
+  },
+  {
+    "instruction": "Show failed authentication attempts by agent",
+    "query": "index=wazuh-alerts rule.groups{}=\"authentication_failed\" | stats count by agent.name, data.srcip, data.srcuser",
+    "status": "NO_RESULTS",
+    "count": 0,
+    "sample": null
+  },
+  {
+    "instruction": "Find alerts with rule level 7 or higher",
+    "query": "CLARIFICATION: To find alerts with rule level 7 or higher, please specify the exact threshold you want to search for (e.g., 7, 10, 15). Also, consider whether you want to include all alert categories or only certain ones. Here are some examples: - All alerts with level 7 or higher: `index=wazuh-alerts rule.level IN (7, 8, 9, 10, 11, 12, 13, 14, 15)` - Web alerts with level 10 or higher: `index=wazuh-alerts rule.groups{\"web\"} rule.level IN (10, 11, 12, 13, 14, 15)` - Authentication failures with level 7 or higher: `index=wazuh-alerts rule.groups{\"authentication_failed\"} rule.level IN (7, 8, 9, 10, 11, 12, 13, 14, 15)`",
+    "status": "SPLUNK_ERROR: SUBMIT_ERROR",
+    "count": 0,
+    "sample": null
+  },
+  {
+    "instruction": "Show web traffic alerts",
+    "query": "index=wazuh-alerts rule.groups{}=\"web\" | stats count by data.srcip, data.url, data.protocol",
+    "status": "SUCCESS",
+    "count": 28022,
+    "sample": {
+      "data.srcip": "1.169.151.2",
+      "data.url": "/articulo/17900-q-mecanismos-de-participacion-ciudadana.html",
+      "data.protocol": "GET",
+      "count": "8"
+    }
+  },
+  {
+    "instruction": "List unique rule IDs and their descriptions",
+    "query": "index=wazuh-alerts | stats dc(rule.id) as distinct_ids, values(rule.id) as ids, values(rule.description) as descriptions | where mvlen(distinct_ids)>20 | sort -distinct_ids | head 50 | fields -distinct_ids -descriptions | rex field=_raw \"^.*?\\[(?<timestamp>[^\\]]+)\\]\" | table _time, ids, descriptions, timestamp",
+    "status": "SPLUNK_ERROR: FAILED: Error in 'where' command: The 'mvlen' function is ",
+    "count": 0,
+    "sample": null
+  },
+  {
+    "instruction": "Find sudo command execution alerts",
+    "query": "index=wazuh-alerts rule.groups{}=\"sudo\" | stats count by agent.name, data.srcuser, data.command",
+    "status": "SUCCESS",
+    "count": 2788,
+    "sample": {
+      "agent.name": "DevSecops-Jenkins-PRE",
+      "data.srcuser": "root",
+      "data.command": "/usr/bin/tar -czvf 20251204_000002_jenkins.tar.gz /opt/jenkins /home/jenkins",
+      "count": "8"
+    }
+  },
+  {
+    "instruction": "Show alerts grouped by rule group",
+    "query": "index=wazuh-alerts | stats count by rule.groups{} | sort -count",
+    "status": "SUCCESS",
+    "count": 51,
+    "sample": {
+      "rule.groups{}": "web",
+      "count": "167354"
+    }
+  },
+  {
+    "instruction": "Find authentication success events",
+    "query": "index=wazuh-alerts rule.groups{}=\"authentication_success\" | table timestamp, agent.name, data.srcuser",
+    "status": "SUCCESS",
+    "count": 14547,
+    "sample": {
+      "timestamp": [
+        "2025-12-04T04:39:15.086+0000",
+        "2025-12-04T04:39:15.086+0000"
+      ],
+      "agent.name": [
+        "mtaproxy-mspbs",
+        "mtaproxy-mspbs"
+      ]
+    }
+  },
+  {
+    "instruction": "Show network connections with source and destination IPs",
+    "query": "index=wazuh-alerts data.srcip=* data.dstip=* | stats count by data.srcip, data.dstip, data.dstport, data.protocol",
+    "status": "SUCCESS",
+    "count": 155,
+    "sample": {
+      "data.srcip": "0.0.0.0",
+      "data.dstip": "255.255.255.255",
+      "data.dstport": "67",
+      "data.protocol": "udp",
+      "count": "1104"
+    }
+  }
+]

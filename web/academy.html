@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeus - SPL Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .nav-links {
+            margin-top: 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .nav-links a.active {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-list {
+            list-style: none;
+        }
+
+        .category-list li {
+            margin-bottom: 4px;
+        }
+
+        .category-list a {
+            display: block;
+            color: #e0e0e0;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .category-list a:hover {
+            background: #2a2a3e;
+        }
+
+        .category-list a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+        }
+
+        /* Search Box */
+        .search-box {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 14px 20px;
+            background: #2a2a3e;
+            border: 2px solid #3a3a4e;
+            border-radius: 25px;
+            color: #e0e0e0;
+            font-size: 15px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-input::placeholder {
+            color: #888;
+        }
+
+        .search-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .search-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Quick Topics */
+        .quick-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .topic-chip {
+            background: #2a2a3e;
+            color: #e0e0e0;
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid #3a3a4e;
+            transition: all 0.2s;
+        }
+
+        .topic-chip:hover {
+            background: #3a3a4e;
+            border-color: #667eea;
+        }
+
+        /* Results Container */
+        .results-container {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #3a3a4e;
+        }
+
+        .results-title {
+            font-size: 18px;
+            color: #e0e0e0;
+        }
+
+        .results-count {
+            color: #888;
+            font-size: 13px;
+        }
+
+        /* Content Card */
+        .content-card {
+            background: #252538;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .content-card.command {
+            border-left-color: #28a745;
+        }
+
+        .content-card.function {
+            border-left-color: #ffc107;
+        }
+
+        .content-card.concept {
+            border-left-color: #17a2b8;
+        }
+
+        .content-card.example {
+            border-left-color: #dc3545;
+        }
+
+        .content-card.best_practice {
+            border-left-color: #6f42c1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .card-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .card-badge.command {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .card-badge.function {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .card-badge.concept {
+            background: rgba(23, 162, 184, 0.2);
+            color: #17a2b8;
+        }
+
+        .card-badge.example {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .card-badge.best_practice {
+            background: rgba(111, 66, 193, 0.2);
+            color: #6f42c1;
+        }
+
+        .card-syntax {
+            background: #1a1a2e;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            color: #00ff00;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .card-description {
+            color: #c0c0c0;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .card-section-title {
+            color: #667eea;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            margin-top: 15px;
+        }
+
+        .card-examples {
+            background: #1a1a2e;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .card-example {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-bottom: 6px;
+            padding: 6px 0;
+            border-bottom: 1px solid #252538;
+        }
+
+        .card-example:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .card-tips {
+            list-style: none;
+        }
+
+        .card-tips li {
+            color: #c0c0c0;
+            font-size: 13px;
+            margin-bottom: 6px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .card-tips li::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        .card-related {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .related-tag {
+            background: #3a3a4e;
+            color: #e0e0e0;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .related-tag:hover {
+            background: #667eea;
+        }
+
+        /* Command/Function Grid */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .grid-item {
+            background: #252538;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #3a3a4e;
+        }
+
+        .grid-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .grid-item-name {
+            font-weight: 600;
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .grid-item-category {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #3a3a4e;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-hint {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* User Info Header */
+        .user-info-header {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* Auth Modal */
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-container {
+            background: #1e1e2e;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .auth-title {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .auth-form-group {
+            margin-bottom: 20px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .auth-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .auth-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .auth-error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .auth-switch a {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+    <script>
+        const API_URL = '';
+    </script>
+    <script src="auth.js"></script>
+</head>
+<body>
+    <!-- User Info Header -->
+    <div id="user-info" class="user-info-header" style="display: none;"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>📚 Zeus - SPL Academy</h1>
+        <p>Learn Splunk Processing Language (SPL)</p>
+        <div class="nav-links">
+            <a href="chat.html">⚡ Query Assistant</a>
+            <a href="academy.html" class="active">📚 SPL Academy</a>
+            <a href="admin.html">🔧 Admin</a>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Commands Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">⌨️ Commands</div>
+                <ul class="category-list" id="command-categories">
+                    <li><a href="#" onclick="loadCommands()">All Commands</a></li>
+                    <!-- Categories loaded dynamically -->
+                </ul>
+            </div>
+
+            <!-- Functions Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">🔧 Functions</div>
+                <ul class="category-list" id="function-categories">
+                    <li><a href="#" onclick="loadFunctions()">All Functions</a></li>
+                    <!-- Categories loaded dynamically -->
+                </ul>
+            </div>
+
+            <!-- Topics Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-title">📖 Topics</div>
+                <ul class="category-list">
+                    <li><a href="#" onclick="searchTopic('Search Pipeline')">Search Pipeline</a></li>
+                    <li><a href="#" onclick="searchTopic('Time Ranges')">Time Ranges</a></li>
+                    <li><a href="#" onclick="searchTopic('Indexes and Sourcetypes')">Indexes & Sourcetypes</a></li>
+                    <li><a href="#" onclick="searchTopic('Fields')">Fields & Extraction</a></li>
+                    <li><a href="#" onclick="searchTopic('Subsearches')">Subsearches</a></li>
+                    <li><a href="#" onclick="searchTopic('Lookups')">Lookups</a></li>
+                    <li><a href="#" onclick="searchTopic('Optimization')">Search Optimization</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Search Box -->
+            <div class="search-box">
+                <div class="search-input-wrapper">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Ask about SPL commands, functions, or concepts..." onkeypress="handleSearchKeyPress(event)">
+                    <button class="search-btn" onclick="performSearch()">Search</button>
+                </div>
+                <div class="quick-topics">
+                    <span class="topic-chip" onclick="quickSearch('stats command')">stats</span>
+                    <span class="topic-chip" onclick="quickSearch('eval function')">eval</span>
+                    <span class="topic-chip" onclick="quickSearch('where command')">where</span>
+                    <span class="topic-chip" onclick="quickSearch('timechart')">timechart</span>
+                    <span class="topic-chip" onclick="quickSearch('join')">join</span>
+                    <span class="topic-chip" onclick="quickSearch('rex extraction')">rex</span>
+                    <span class="topic-chip" onclick="quickSearch('best practices')">best practices</span>
+                </div>
+            </div>
+
+            <!-- Results Container -->
+            <div class="results-container" id="results-container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎓</div>
+                    <div class="empty-state-text">Welcome to SPL Academy!</div>
+                    <div class="empty-state-hint">Search for any SPL command, function, or concept to get started.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="auth-modal">
+        <div class="auth-container">
+            <div id="login-form-container">
+                <h2 class="auth-title">Login to Zeus</h2>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="auth-form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="auth-submit">Login</button>
+                    <div id="login-error" class="auth-error"></div>
+                </form>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="switchToRegister()">Register</a>
+                </div>
+            </div>
+            <div id="register-form-container" style="display: none;">
+                <h2 class="auth-title">Create Account</h2>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="auth-form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required minlength="3">
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required minlength="6">
+                    </div>
+                    <div class="auth-form-group">
+                        <label for="register-fullname">Full Name (Optional)</label>
+                        <input type="text" id="register-fullname">
+                    </div>
+                    <button type="submit" class="auth-submit">Create Account</button>
+                    <div id="register-error" class="auth-error"></div>
+                </form>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="switchToLogin()">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle search key press
+        function handleSearchKeyPress(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        // Quick search
+        function quickSearch(query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        // Search topic
+        function searchTopic(topic) {
+            document.getElementById('searchInput').value = topic;
+            performSearch();
+        }
+
+        // Perform search
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Searching...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/learn`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ question: query })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Search failed');
+                }
+
+                const data = await response.json();
+                displaySearchResult(data, query);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-text">Search failed</div>
+                        <div class="empty-state-hint">${escapeHtml(error.message)}</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display search result
+        function displaySearchResult(data, query) {
+            const container = document.getElementById('results-container');
+
+            // Convert markdown-like formatting to HTML
+            let formattedAnswer = formatAnswer(data.answer);
+
+            // Build related topics
+            let relatedHtml = '';
+            if (data.related_topics && data.related_topics.length > 0) {
+                relatedHtml = `
+                    <div class="card-section-title">Related Topics</div>
+                    <div class="card-related">
+                        ${data.related_topics.map(topic =>
+                            `<span class="related-tag" onclick="quickSearch('${escapeHtml(topic)}')">${escapeHtml(topic)}</span>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">Results for "${escapeHtml(query)}"</div>
+                </div>
+                <div class="content-card">
+                    <div class="learn-content">
+                        ${formattedAnswer}
+                        ${relatedHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Format answer (markdown to HTML)
+        function formatAnswer(text) {
+            let html = escapeHtml(text);
+
+            // Convert code blocks
+            html = html.replace(/```spl\n?([\s\S]*?)```/g, '<pre class="card-examples" style="color: #00ff00;">$1</pre>');
+            html = html.replace(/```\n?([\s\S]*?)```/g, '<pre class="card-examples" style="color: #00ff00;">$1</pre>');
+
+            // Convert inline code
+            html = html.replace(/`([^`]+)`/g, '<code style="background: #1a1a2e; padding: 2px 6px; border-radius: 4px; color: #00ff00;">$1</code>');
+
+            // Convert headers
+            html = html.replace(/^## (.+)$/gm, '<h3 style="color: #667eea; margin-top: 20px; margin-bottom: 12px; font-size: 18px;">$1</h3>');
+            html = html.replace(/^### (.+)$/gm, '<div class="card-section-title">$1</div>');
+
+            // Convert bold
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Convert bullet lists
+            html = html.replace(/^- (.+)$/gm, '<li style="margin-bottom: 6px;">$1</li>');
+            html = html.replace(/(<li.*<\/li>\n?)+/g, '<ul style="margin: 10px 0; padding-left: 20px; color: #c0c0c0;">$&</ul>');
+
+            // Convert line breaks
+            html = html.replace(/\n\n/g, '</p><p style="margin-top: 12px; color: #c0c0c0; line-height: 1.6;">');
+            html = '<p style="color: #c0c0c0; line-height: 1.6;">' + html + '</p>';
+
+            return html;
+        }
+
+        // Load all commands
+        async function loadCommands(category = null) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading commands...</p>
+                </div>
+            `;
+
+            try {
+                let url = `/api/learn/commands`;
+                if (category) {
+                    url += `?category=${encodeURIComponent(category)}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load commands');
+                }
+
+                const data = await response.json();
+                displayCommandList(data.commands, category);
+                updateCommandCategories(data.categories);
+
+            } catch (error) {
+                console.error('Error loading commands:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-text">Failed to load commands</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display command list
+        function displayCommandList(commands, category) {
+            const container = document.getElementById('results-container');
+            const title = category ? `Commands: ${category}` : 'All Commands';
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">${escapeHtml(title)}</div>
+                    <div class="results-count">${commands.length} commands</div>
+                </div>
+                <div class="grid-container">
+                    ${commands.map(cmd => `
+                        <div class="grid-item" onclick="loadCommand('${escapeHtml(cmd)}')">
+                            <div class="grid-item-name">${escapeHtml(cmd)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Update command categories in sidebar
+        function updateCommandCategories(categories) {
+            const container = document.getElementById('command-categories');
+            container.innerHTML = `
+                <li><a href="#" onclick="loadCommands()">All Commands</a></li>
+                ${categories.map(cat => `
+                    <li><a href="#" onclick="loadCommands('${escapeHtml(cat)}')">${escapeHtml(cat)}</a></li>
+                `).join('')}
+            `;
+        }
+
+        // Load specific command
+        async function loadCommand(commandName) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading ${escapeHtml(commandName)}...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/learn/commands/${encodeURIComponent(commandName)}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Command not found');
+                }
+
+                const data = await response.json();
+                displayCommandDetail(data);
+
+            } catch (error) {
+                console.error('Error loading command:', error);
+                // Fallback to search
+                document.getElementById('searchInput').value = commandName + ' command';
+                performSearch();
+            }
+        }
+
+        // Display command detail
+        function displayCommandDetail(cmd) {
+            const container = document.getElementById('results-container');
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">${escapeHtml(cmd.name)} Command</div>
+                </div>
+                <div class="content-card command">
+                    <div class="card-header">
+                        <div class="card-title">${escapeHtml(cmd.name)}</div>
+                        <span class="card-badge command">${escapeHtml(cmd.category)}</span>
+                    </div>
+                    <div class="card-syntax">${escapeHtml(cmd.syntax)}</div>
+                    <div class="card-description">${escapeHtml(cmd.description)}</div>
+
+                    ${cmd.examples && cmd.examples.length > 0 ? `
+                        <div class="card-section-title">Examples</div>
+                        <div class="card-examples">
+                            ${cmd.examples.map(ex => `<div class="card-example">${escapeHtml(ex)}</div>`).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${cmd.tips && cmd.tips.length > 0 ? `
+                        <div class="card-section-title">Tips</div>
+                        <ul class="card-tips">
+                            ${cmd.tips.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+
+                    ${cmd.related && cmd.related.length > 0 ? `
+                        <div class="card-section-title">Related Commands</div>
+                        <div class="card-related">
+                            ${cmd.related.map(r => `<span class="related-tag" onclick="loadCommand('${escapeHtml(r)}')">${escapeHtml(r)}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Load all functions
+        async function loadFunctions(category = null) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading functions...</p>
+                </div>
+            `;
+
+            try {
+                let url = `/api/learn/functions`;
+                if (category) {
+                    url += `?category=${encodeURIComponent(category)}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load functions');
+                }
+
+                const data = await response.json();
+                displayFunctionList(data.functions, category);
+                updateFunctionCategories(data.categories);
+
+            } catch (error) {
+                console.error('Error loading functions:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-text">Failed to load functions</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Display function list
+        function displayFunctionList(functions, category) {
+            const container = document.getElementById('results-container');
+            const title = category ? `Functions: ${category}` : 'All Functions';
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">${escapeHtml(title)}</div>
+                    <div class="results-count">${functions.length} functions</div>
+                </div>
+                <div class="grid-container">
+                    ${functions.map(func => `
+                        <div class="grid-item" onclick="loadFunction('${escapeHtml(func)}')">
+                            <div class="grid-item-name">${escapeHtml(func)}()</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Update function categories in sidebar
+        function updateFunctionCategories(categories) {
+            const container = document.getElementById('function-categories');
+            container.innerHTML = `
+                <li><a href="#" onclick="loadFunctions()">All Functions</a></li>
+                ${categories.map(cat => `
+                    <li><a href="#" onclick="loadFunctions('${escapeHtml(cat)}')">${escapeHtml(cat)}</a></li>
+                `).join('')}
+            `;
+        }
+
+        // Load specific function
+        async function loadFunction(functionName) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading ${escapeHtml(functionName)}...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/learn/functions/${encodeURIComponent(functionName)}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('Function not found');
+                }
+
+                const data = await response.json();
+                displayFunctionDetail(data);
+
+            } catch (error) {
+                console.error('Error loading function:', error);
+                // Fallback to search
+                document.getElementById('searchInput').value = functionName + ' function';
+                performSearch();
+            }
+        }
+
+        // Display function detail
+        function displayFunctionDetail(func) {
+            const container = document.getElementById('results-container');
+
+            container.innerHTML = `
+                <div class="results-header">
+                    <div class="results-title">${escapeHtml(func.name)}() Function</div>
+                </div>
+                <div class="content-card function">
+                    <div class="card-header">
+                        <div class="card-title">${escapeHtml(func.name)}()</div>
+                        <span class="card-badge function">${escapeHtml(func.category)}</span>
+                    </div>
+                    <div class="card-syntax">${escapeHtml(func.syntax)}</div>
+                    <div class="card-description">${escapeHtml(func.description)}</div>
+
+                    ${func.examples && func.examples.length > 0 ? `
+                        <div class="card-section-title">Examples</div>
+                        <div class="card-examples">
+                            ${func.examples.map(ex => `<div class="card-example">${escapeHtml(ex)}</div>`).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${func.tips && func.tips.length > 0 ? `
+                        <div class="card-section-title">Tips</div>
+                        <ul class="card-tips">
+                            ${func.tips.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+
+                    ${func.related && func.related.length > 0 ? `
+                        <div class="card-section-title">Related Functions</div>
+                        <div class="card-related">
+                            ${func.related.map(r => `<span class="related-tag" onclick="loadFunction('${escapeHtml(r)}')">${escapeHtml(r)}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "total_fields": 220,
+  "core_fields": 93,
+  "unique_rules": 200,
+  "rule_groups": 51,
+  "sample_events": 50,
+  "mitre_mappings": 50
+}

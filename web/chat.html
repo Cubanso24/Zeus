@@ -328,6 +328,49 @@
             font-size: 13px;
             overflow-x: auto;
             border: 1px solid #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Learn Mode Styles */
+        .learn-response {
+            line-height: 1.6;
+        }
+
+        .learn-response h3 {
+            color: #667eea;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .learn-response h4 {
+            color: #888;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .learn-response ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .learn-response li {
+            margin-bottom: 4px;
+        }
+
+        .learn-response code {
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+
+        .learn-response pre.query-code {
+            margin: 10px 0;
         }
 
         .clarification-tag {
@@ -1269,8 +1312,15 @@
                 <p style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">No history yet</p>
             </div>
 
+            <!-- Mode Toggle (Query vs Learn) -->
+            <div class="format-toggle" style="background: linear-gradient(135deg, #1a1a2e 0%, #252538 100%); border: 2px solid #667eea;">
+                <span class="format-toggle-label" style="color: #667eea; font-weight: 600;">Mode:</span>
+                <button class="format-toggle-btn active" id="modeQuery" onclick="setMode('query')" title="Generate Splunk queries">⚡ Query</button>
+                <button class="format-toggle-btn" id="modeLearn" onclick="setMode('learn')" title="Learn about SPL">📚 Learn</button>
+            </div>
+
             <!-- Explanation Format Toggle -->
-            <div class="format-toggle">
+            <div class="format-toggle" id="explanationFormatToggle">
                 <span class="format-toggle-label">Explanation:</span>
                 <button class="format-toggle-btn active" id="formatStructured" onclick="setExplanationFormat('structured')">Structured</button>
                 <button class="format-toggle-btn" id="formatParagraph" onclick="setExplanationFormat('paragraph')">Paragraph</button>
@@ -1299,7 +1349,8 @@
             </div>
 
             <div class="chat-container" id="chatContainer">
-                <div class="message assistant">
+                <!-- Initial welcome message - will be replaced by JS based on mode -->
+                <div class="message assistant" data-mode="welcome">
                     <div class="message-content">
                         <p>Hi! I'm Zeus, your Splunk Query Assistant. I can help you generate SPL queries from natural language.</p>
                         <p style="margin-top: 10px;">Try asking me something like:</p>
@@ -1334,6 +1385,7 @@
         let lastUserQuery = '';
         let currentAbortController = null;
         let explanationFormat = 'structured'; // 'structured' or 'paragraph'
+        let currentMode = 'query'; // 'query' or 'learn'
         let historyData = []; // Store history for filtering
         let selectedIndexes = ['wazuh-alerts']; // Default index
 
@@ -1695,6 +1747,127 @@
             document.getElementById('formatParagraph').classList.toggle('active', format === 'paragraph');
         }
 
+        // Mode toggle (Query vs Learn)
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeQuery').classList.toggle('active', mode === 'query');
+            document.getElementById('modeLearn').classList.toggle('active', mode === 'learn');
+
+            // Update UI based on mode
+            const userInput = document.getElementById('userInput');
+            const header = document.querySelector('.header h1');
+            const headerDesc = document.querySelector('.header p');
+            const generateAltBtn = document.getElementById('generateAltBtn');
+            const explanationToggle = document.getElementById('explanationFormatToggle');
+            const indexSelector = document.querySelector('.index-selector');
+
+            if (mode === 'learn') {
+                userInput.placeholder = 'Ask about SPL commands, functions, or concepts...';
+                header.innerHTML = '📚 Zeus - SPL Academy';
+                headerDesc.textContent = 'Learn about Splunk Processing Language';
+                generateAltBtn.style.display = 'none';
+                explanationToggle.style.display = 'none';
+                indexSelector.style.display = 'none';
+            } else {
+                userInput.placeholder = 'Ask for a Splunk query...';
+                header.innerHTML = '⚡ Zeus - Splunk Query Assistant';
+                headerDesc.textContent = 'Ask me to generate Splunk queries in natural language';
+                generateAltBtn.style.display = 'inline-block';
+                explanationToggle.style.display = 'flex';
+                indexSelector.style.display = 'block';
+            }
+
+            // Filter messages to show only current mode's conversation
+            filterMessagesByMode(mode);
+
+            // Save to localStorage
+            localStorage.setItem('zeus_mode', mode);
+        }
+
+        // Filter and show only messages for the current mode
+        function filterMessagesByMode(mode) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messages = chatContainer.querySelectorAll('.message');
+            let hasMessagesForMode = false;
+
+            messages.forEach(msg => {
+                const msgMode = msg.dataset.mode;
+                // Welcome messages (no mode) are always hidden when switching, we'll add a fresh one
+                if (!msgMode || msgMode === 'welcome') {
+                    msg.style.display = 'none';
+                } else if (msgMode === mode) {
+                    msg.style.display = 'flex';
+                    hasMessagesForMode = true;
+                } else {
+                    msg.style.display = 'none';
+                }
+            });
+
+            // Always show a welcome message for the current mode
+            showWelcomeForMode(mode, !hasMessagesForMode);
+        }
+
+        // Show welcome message for current mode
+        function showWelcomeForMode(mode, showExamples) {
+            const chatContainer = document.getElementById('chatContainer');
+
+            // Remove any existing welcome messages
+            const existingWelcomes = chatContainer.querySelectorAll('.message[data-mode="welcome"]');
+            existingWelcomes.forEach(w => w.remove());
+
+            // Create welcome message for current mode
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'message assistant';
+            welcomeDiv.dataset.mode = 'welcome';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            if (mode === 'learn') {
+                contentDiv.innerHTML = `
+                    <p>Hi! I'm Zeus in <strong>Learn Mode</strong>. I can help you understand Splunk Processing Language (SPL).</p>
+                    ${showExamples ? `
+                    <p style="margin-top: 10px;">Try asking me questions like:</p>
+                    <div class="examples">
+                        <span class="example-chip" onclick="setInput('What does the stats command do?')">stats command</span>
+                        <span class="example-chip" onclick="setInput('How do I use the eval function?')">eval function</span>
+                        <span class="example-chip" onclick="setInput('What\\'s the difference between stats and eventstats?')">stats vs eventstats</span>
+                        <span class="example-chip" onclick="setInput('How do time ranges work in Splunk?')">time ranges</span>
+                        <span class="example-chip" onclick="setInput('Best practices for search optimization')">best practices</span>
+                    </div>
+                    ` : ''}
+                    <p style="margin-top: 15px; font-size: 12px; color: #888;">
+                        💡 Tip: Switch to <strong>Query Mode</strong> when you want to generate actual Splunk queries.
+                    </p>
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <p>Hi! I'm Zeus, your Splunk Query Assistant. I can help you generate SPL queries from natural language.</p>
+                    ${showExamples ? `
+                    <p style="margin-top: 10px;">Try asking me something like:</p>
+                    <div class="examples">
+                        <span class="example-chip" onclick="setInput('Find failed SSH login attempts in the last 24 hours')">Find failed SSH logins</span>
+                        <span class="example-chip" onclick="setInput('Show me all firewall blocks')">Firewall blocks</span>
+                        <span class="example-chip" onclick="setInput('Get Windows security events with Event ID 4624')">Windows security events</span>
+                    </div>
+                    ` : ''}
+                    <p style="margin-top: 15px; font-size: 12px; color: #888;">
+                        💡 Tip: Switch to <strong>Learn Mode</strong> to learn about SPL commands and functions.
+                    </p>
+                `;
+            }
+
+            welcomeDiv.appendChild(contentDiv);
+            // Insert at the beginning
+            chatContainer.insertBefore(welcomeDiv, chatContainer.firstChild);
+        }
+
+        // Load saved mode on init
+        function loadSavedMode() {
+            const savedMode = localStorage.getItem('zeus_mode') || 'query';
+            setMode(savedMode);
+        }
+
         // Stop generation
         function stopGeneration() {
             if (currentAbortController) {
@@ -1881,8 +2054,135 @@
 
             if (!message) return;
 
-            // Open context wizard to gather context before generating
-            openContextWizard(message);
+            // Handle differently based on mode
+            if (currentMode === 'learn') {
+                // Learn mode: Send to /learn endpoint directly
+                sendLearnMessage(message);
+            } else {
+                // Query mode: Open context wizard to gather context before generating
+                openContextWizard(message);
+            }
+        }
+
+        // Send message in Learn Mode
+        async function sendLearnMessage(message) {
+            const input = document.getElementById('userInput');
+
+            lastUserQuery = message;
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+
+            // Setup abort controller for stop functionality
+            currentAbortController = new AbortController();
+
+            // Show loading state
+            const sendBtn = document.getElementById('sendBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            sendBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`/api/learn`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        question: message
+                    }),
+                    signal: currentAbortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Add assistant response with learning content
+                addLearnMessage(data);
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}. Please check your connection and try again.`, 'assistant', false, true);
+            } finally {
+                currentAbortController = null;
+                sendBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+            }
+        }
+
+        // Add learning response message
+        function addLearnMessage(data) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.dataset.mode = 'learn';  // Tag as learn mode message
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.style.maxWidth = '85%';
+
+            // Convert markdown-like formatting to HTML
+            let formattedAnswer = formatLearnAnswer(data.answer);
+
+            // Build related topics section
+            let relatedHtml = '';
+            if (data.related_topics && data.related_topics.length > 0) {
+                relatedHtml = `
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #3a3a4e;">
+                        <span style="font-size: 12px; color: #667eea; font-weight: 600;">Related Topics:</span>
+                        <div style="margin-top: 8px;">
+                            ${data.related_topics.map(topic =>
+                                `<span class="example-chip" onclick="setInput('Tell me about ${escapeHtml(topic)}')">${escapeHtml(topic)}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            contentDiv.innerHTML = `
+                <div class="learn-response">
+                    ${formattedAnswer}
+                    ${relatedHtml}
+                </div>
+            `;
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Format learning answer (markdown-like to HTML)
+        function formatLearnAnswer(text) {
+            let html = escapeHtml(text);
+
+            // Convert markdown code blocks
+            html = html.replace(/```spl\n?([\s\S]*?)```/g, '<pre class="query-code">$1</pre>');
+            html = html.replace(/```\n?([\s\S]*?)```/g, '<pre class="query-code">$1</pre>');
+
+            // Convert inline code
+            html = html.replace(/`([^`]+)`/g, '<code style="background: #1a1a2e; padding: 2px 6px; border-radius: 4px; color: #00ff00;">$1</code>');
+
+            // Convert headers
+            html = html.replace(/^## (.+)$/gm, '<h3 style="color: #667eea; margin-top: 15px; margin-bottom: 10px;">$1</h3>');
+            html = html.replace(/^### (.+)$/gm, '<h4 style="color: #888; margin-top: 12px; margin-bottom: 8px; font-size: 13px; text-transform: uppercase;">$1</h4>');
+
+            // Convert bold
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Convert bullet lists
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul style="margin: 8px 0; padding-left: 20px;">$&</ul>');
+
+            // Convert line breaks
+            html = html.replace(/\n\n/g, '</p><p style="margin-top: 10px;">');
+            html = '<p>' + html + '</p>';
+
+            return html;
         }
 
         // Legacy direct send (used for high-confidence queries or after wizard)
@@ -2043,6 +2343,7 @@
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message assistant';
+            messageDiv.dataset.mode = 'query';  // Alternatives are query mode only
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
@@ -2070,6 +2371,7 @@
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
+            messageDiv.dataset.mode = currentMode;  // Tag message with current mode
 
             const contentDiv = document.createElement('div');
             contentDiv.className = `message-content ${isClarification ? 'clarification' : ''}`;
@@ -2441,6 +2743,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             initAuth();
             loadIndexesFromStorage();
+            loadSavedMode();
         });
     </script>
 

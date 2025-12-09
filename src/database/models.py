@@ -15,10 +15,12 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=True)  # Nullable for LDAP users
     full_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    is_ldap_user = Column(Boolean, default=False)  # Track LDAP vs local users
+    ldap_dn = Column(String(500), nullable=True)   # Store LDAP DN for reference
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
 
@@ -97,3 +99,19 @@ class TrainingJob(Base):
 
     def __repr__(self):
         return f"<TrainingJob(id={self.id}, status='{self.status}', created_by={self.created_by})>"
+
+
+class SystemSettings(Base):
+    """System settings model for storing configuration like LDAP settings."""
+
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(JSON, nullable=True)  # Store complex settings as JSON
+    description = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    def __repr__(self):
+        return f"<SystemSettings(key='{self.key}')>"

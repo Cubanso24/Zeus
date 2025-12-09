@@ -484,6 +484,7 @@ MANDATORY RULES - FOLLOW EXACTLY:
    - data.srcip, data.dstip, data.srcport, data.dstport (network)
    - data.srcuser, data.dstuser (users)
    - data.protocol, data.url, data.command, data.pwd, data.tty, data.uid (activity)
+   - syscheck.path, syscheck.event, syscheck.md5_before, syscheck.md5_after, syscheck.sha1_after, syscheck.sha256_after, syscheck.changed_attributes{} (file integrity)
    - timestamp, location, decoder.name, full_log, manager.name (metadata)
 
    IMPORTANT: rule.level is a MULTIVALUE field stored as strings.
@@ -497,7 +498,10 @@ MANDATORY RULES - FOLLOW EXACTLY:
    - "attack" - attack detection
    - "authentication_failed" - failed logins
    - "authentication_success" - successful logins
-   - "syscheck" - file integrity monitoring
+   - "syscheck" - file integrity monitoring (all syscheck events)
+   - "syscheck_entry_modified" - file modifications (use this for MD5/hash changes)
+   - "syscheck_entry_added" - new files added
+   - "syscheck_entry_deleted" - files deleted
    - "vulnerability-detector" - vulnerability alerts
    - "sudo" - sudo commands
    - "pam" - PAM authentication
@@ -524,6 +528,12 @@ index=wazuh-alerts rule.groups{}="sudo" | stats count by agent.name, data.srcuse
 
 Successful authentication:
 index=wazuh-alerts rule.groups{}="authentication_success" | table timestamp, agent.name, data.srcuser
+
+File integrity/syscheck (MD5/SHA hash changes):
+index=wazuh-alerts rule.groups{}="syscheck_entry_modified" | table _time agent.name syscheck.path syscheck.md5_before syscheck.md5_after syscheck.changed_attributes{}
+
+File integrity with date range (use earliest/latest for dates):
+index=wazuh-alerts rule.groups{}="syscheck_entry_modified" earliest="07/11/2025:00:00:00" latest="07/15/2025:00:00:00" | table _time agent.name syscheck.path syscheck.md5_after
 
 List rule IDs (simple):
 index=wazuh-alerts | stats count by rule.id, rule.description | sort -count

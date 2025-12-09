@@ -193,9 +193,16 @@ class SplunkClient:
     QUERY_REQUIREMENTS = {
         "network_traffic_analysis": {
             "description": "Analyzing network traffic, connections, or bandwidth",
-            "keywords": ["traffic", "bandwidth", "netflow", "connection", "bytes transferred", "data transfer", "network flow"],
+            "keywords": [
+                "traffic", "bandwidth", "netflow", "connection", "bytes transferred",
+                "data transfer", "network flow", "port 443", "port 80", "port 22",
+                "443 traffic", "80 traffic", "22 traffic", "https traffic", "http traffic",
+                "ssh traffic", "rdp traffic", "port 3389", "all traffic", "inbound traffic",
+                "outbound traffic", "network traffic", "tcp traffic", "udp traffic",
+                "dest_port", "src_port", "bytes_in", "bytes_out"
+            ],
             "requires": ["full_network_traffic", "network_connections"],
-            "alternative_with_edr": "Wazuh can show network-related ALERTS (like port scans detected) but not raw traffic data. For actual traffic analysis, you need network flow data (NetFlow, Zeek, etc.)."
+            "alternative_with_edr": "Wazuh EDR shows security ALERTS (like 'possible port scan detected') but NOT actual traffic data. For traffic on port 443/80/etc, you need NetFlow, Zeek, or firewall logs."
         },
         "dns_analysis": {
             "description": "DNS query analysis and threat hunting",

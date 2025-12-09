@@ -1606,8 +1606,11 @@
                     cache_modifications: data.cache_modifications
                 } : null;
 
-                // Add response
-                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation, cacheInfo);
+                // Get data warnings from response
+                const dataWarnings = data.data_warnings || [];
+
+                // Add response with data warnings
+                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation, cacheInfo, dataWarnings);
 
                 // Reload history
                 loadHistory();
@@ -1935,8 +1938,11 @@
                     cache_modifications: data.cache_modifications
                 } : null;
 
-                // Add assistant response with explanation and cache info
-                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation, cacheInfo);
+                // Get data warnings from response
+                const dataWarnings = data.data_warnings || [];
+
+                // Add assistant response with explanation, cache info, and data warnings
+                addMessage(data.query, 'assistant', data.is_clarification, false, data.explanation, cacheInfo, dataWarnings);
 
                 // Reload history to show the new query
                 loadHistory();
@@ -2060,7 +2066,7 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function addMessage(text, sender, isClarification = false, isError = false, explanation = null, cacheInfo = null) {
+        function addMessage(text, sender, isClarification = false, isError = false, explanation = null, cacheInfo = null, dataWarnings = null) {
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
@@ -2078,6 +2084,24 @@
                     const queryId = 'query-' + Date.now();
                     const feedbackId = 'feedback-' + Date.now();
                     const explanationId = 'explanation-' + Date.now();
+
+                    // Data availability warnings
+                    let dataWarningsHtml = '';
+                    if (dataWarnings && dataWarnings.length > 0) {
+                        const warningItems = dataWarnings.map(w => `
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #ff6b6b;">⚠️ ${escapeHtml(w.capability || w.requested_capability)}</strong>
+                                <p style="margin: 4px 0; font-size: 12px; color: #ccc;">${escapeHtml(w.description || w.requested_description || '')}</p>
+                                <p style="margin: 4px 0; font-size: 11px; color: #4ade80;">💡 ${escapeHtml(w.suggestion)}</p>
+                            </div>
+                        `).join('');
+                        dataWarningsHtml = `
+                            <div style="background: #3d2020; border: 1px solid #dc3545; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                                <div style="color: #dc3545; font-weight: 600; margin-bottom: 8px;">⚠️ Data Availability Warning</div>
+                                ${warningItems}
+                            </div>
+                        `;
+                    }
 
                     // Cache badge if result came from approved query cache
                     let cacheHtml = '';
@@ -2123,6 +2147,7 @@
                     }
 
                     contentDiv.innerHTML = `
+                        ${dataWarningsHtml}
                         ${cacheHtml}
                         <p><strong>${cacheInfo && cacheInfo.from_cache ? 'Previously Approved Query:' : 'Generated Splunk Query:'}</strong></p>
                         <div class="query-code" id="${queryId}">${escapeHtml(text)}</div>

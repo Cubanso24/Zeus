@@ -64,6 +64,9 @@ class QueryResponse(BaseModel):
     cache_note: Optional[str] = Field(None, description="Note about the cached result")
     cache_params_modified: bool = Field(default=False, description="Whether parameters were adjusted for the cached query")
     cache_modifications: Optional[List[str]] = Field(None, description="List of parameter modifications made")
+    # Data availability warnings
+    data_warning: Optional[str] = Field(None, description="Warning about data availability limitations")
+    data_warnings: List[dict] = Field(default=[], description="Detailed data availability warnings")
 
 
 class BatchQueryRequest(BaseModel):
@@ -2354,6 +2357,30 @@ REQUIREMENTS:
 
         logger.info(f"Context query generated for user {current_user.username}")
 
+        # Check for data capability mismatches and add warnings
+        data_warning = None
+        data_warnings_list = []
+
+        try:
+            client = get_splunk_client()
+            if client.is_configured() and request.indexes:
+                mismatches = client.check_data_capability(request.instruction, request.indexes)
+                if mismatches:
+                    # Build a summary warning
+                    warning_parts = []
+                    for m in mismatches:
+                        warning_parts.append(f"⚠️ {m.requested_capability}: {m.suggestion}")
+                        data_warnings_list.append({
+                            "capability": m.requested_capability,
+                            "description": m.requested_description,
+                            "suggestion": m.suggestion,
+                            "severity": m.severity
+                        })
+                    data_warning = " | ".join(warning_parts)
+                    logger.info(f"Data capability warnings for query: {len(mismatches)} warnings")
+        except Exception as e:
+            logger.warning(f"Failed to check data capabilities: {e}")
+
         return QueryResponse(
             query=primary_query,
             explanation=explanation,
@@ -2361,6 +2388,8 @@ REQUIREMENTS:
             clarification_questions=clarification_questions,
             alternatives=[],
             query_id=db_query.id,
+            data_warning=data_warning,
+            data_warnings=data_warnings_list,
         )
 
     except Exception as e:
